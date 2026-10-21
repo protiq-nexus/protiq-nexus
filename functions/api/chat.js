@@ -52,10 +52,17 @@ export async function onRequestPost({ request, env }) {
     }
 
     return Response.json({ answer: result.response });
-  } catch {
+ 
+  } catch (error) {
+    console.error("Physics AI error:", error);
+
     return Response.json(
-      { error: "AI service unavailable. Please try again." },
+      {
+        error: "AI service failed.",
+        details: String(error)
+      },
       { status: 500 }
     );
   }
+
 }
