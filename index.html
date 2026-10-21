@@ -325,19 +325,47 @@
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    function exploreTopic() {
-      const topic = document.getElementById("topic").value.trim();
-      const message = document.getElementById("searchMessage");
+   
+async function exploreTopic() {
+  const topic = document.getElementById("topic").value.trim();
+  const message = document.getElementById("searchMessage");
 
-      if (!topic) {
-        message.textContent = "Enter a physics topic to get started.";
-        return;
-      }
+  if (!topic) {
+    message.textContent = "Enter a physics question to get started.";
+    return;
+  }
 
-      message.textContent =
-        'Your topic: "' + topic +
-        '". The learning and search features are planned for a future update.';
+  message.textContent = "Thinking...";
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: "user",
+            content: topic
+          }
+        ]
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "AI request failed.");
     }
+
+    message.textContent = data.answer;
+  } catch (error) {
+    message.textContent =
+      "Unable to get an answer. Please try again.";
+  }
+}
+
   </script>
 </body>
 </html>
