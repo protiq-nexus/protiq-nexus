@@ -29,29 +29,48 @@ export async function onRequestPost({ request, env }) {
         content: m.content.slice(0, 3000)
       }));
 
-    const result = await env.AI.run(
-      "@cf/zai-org/glm-4.7-flash",
+  }
+  
+const result = await env.AI.run(
+  "@cf/zai-org/glm-4.7-flash",
+  {
+    messages: [
       {
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are ProtiQ Nexus, a Physics tutor. Answer physics questions accurately, explain concepts clearly, show equations and step-by-step calculations when useful, define symbols and SI units, and reply in the user's language. State uncertainty honestly."
-          },
-          ...messages
-        ],
-        max_tokens: 1200
-      }
-    );
-
-    if (!result?.response) {
-      return Response.json(
-        { error: "No answer returned. Please try again." },
-        { status: 502 }
-      );
+        role: "system",
+        content:
+          "You are ProtiQ Nexus, a Physics tutor. Explain physics clearly, show equations when useful, and answer in the user's language."
+      },
+      ...messages
+    ],
+    max_tokens: 1200,
+    chat_template_kwargs: {
+      enable_thinking: false
     }
+  }
+);
 
-    return Response.json({ answer: result.response });
+console.log(
+  "Workers AI result keys:",
+  Object.keys(result ?? {})
+);
+
+const answer =
+  result?.response ??
+  result?.choices?.[0]?.message?.content ??
+  result?.result?.response;
+
+if (typeof answer !== "string" || !answer.trim()) {
+  return Response.json(
+    {
+      error: "AI returned no readable answer.",
+      resultKeys: Object.keys(result ?? {})
+    },
+    { status: 502 }
+  );
+}
+
+return Response.json({ answer });
+
  
   } catch (error) {
     console.error("Physics AI error:", error);
