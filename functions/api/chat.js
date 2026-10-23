@@ -29,49 +29,45 @@ export async function onRequestPost({ request, env }) {
         content: m.content.slice(0, 3000)
       }));
 
-  }
-  
-const result = await env.AI.run(
-  "@cf/zai-org/glm-4.7-flash",
-  {
-    messages: [
+    const result = await env.AI.run(
+      "@cf/zai-org/glm-4.7-flash",
       {
-        role: "system",
-        content:
-          "You are ProtiQ Nexus, a Physics tutor. Explain physics clearly, show equations when useful, and answer in the user's language."
-      },
-      ...messages
-    ],
-    max_tokens: 1200,
-    chat_template_kwargs: {
-      enable_thinking: false
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are ProtiQ Nexus, a Physics tutor. Explain physics clearly, show equations when useful, and answer in the user's language."
+          },
+          ...messages
+        ],
+        max_tokens: 1200,
+        chat_template_kwargs: {
+          enable_thinking: false
+        }
+      }
+    );
+
+    console.log(
+      "Workers AI result keys:",
+      Object.keys(result ?? {})
+    );
+
+    const answer =
+      result?.response ??
+      result?.choices?.[0]?.message?.content ??
+      result?.result?.response;
+
+    if (typeof answer !== "string" || !answer.trim()) {
+      return Response.json(
+        {
+          error: "AI returned no readable answer.",
+          resultKeys: Object.keys(result ?? {})
+        },
+        { status: 502 }
+      );
     }
-  }
-);
 
-console.log(
-  "Workers AI result keys:",
-  Object.keys(result ?? {})
-);
-
-const answer =
-  result?.response ??
-  result?.choices?.[0]?.message?.content ??
-  result?.result?.response;
-
-if (typeof answer !== "string" || !answer.trim()) {
-  return Response.json(
-    {
-      error: "AI returned no readable answer.",
-      resultKeys: Object.keys(result ?? {})
-    },
-    { status: 502 }
-  );
-}
-
-return Response.json({ answer });
-
- 
+    return Response.json({ answer });
   } catch (error) {
     console.error("Physics AI error:", error);
 
@@ -83,5 +79,4 @@ return Response.json({ answer });
       { status: 500 }
     );
   }
-
 }
