@@ -169,7 +169,15 @@
       border: 1px solid var(--border); border-radius: 9px;
       background: #0a1120; color: var(--text);
     }
-    #searchMessage { color: var(--cyan); font-size: 14px; min-height: 24px; }
+    #searchMessage {
+      color: var(--text);
+      font-size: 14px;
+      min-height: 24px;
+      line-height: 1.7;
+      margin-top: 12px;
+    }
+    #searchMessage p { margin: 0 0 10px; color: var(--muted); }
+    #searchMessage strong { color: var(--cyan); font-weight: 600; }
 
     footer {
       border-top: 1px solid var(--border); padding: 28px 24px;
@@ -306,7 +314,7 @@
             <input id="topic" type="text" placeholder="What physics topic interests you?">
             <button class="btn primary" onclick="exploreTopic()">Explore</button>
           </div>
-          <p id="searchMessage" aria-live="polite"></p>
+          <div id="searchMessage" aria-live="polite"></div>
         </div>
       </div>
     </section>
@@ -336,6 +344,24 @@
     let allQuestions = [];
     let currentTopic = "all";
     let currentLevel = "all";
+
+    function formatAIAnswer(text) {
+      if (!text) return "";
+      let t = String(text);
+
+      // remove common markdown noise
+      t = t.replace(/^#{1,6}\s+/gm, "");
+      t = t.replace(/\*\*\*(.*?)\*\*\*/g, "<strong>$1</strong>");
+      t = t.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+      t = t.replace(/\*(.*?)\*/g, "$1");
+      t = t.replace(/`{1,3}([^`]+)`{1,3}/g, "$1");
+      t = t.replace(/^\s*[-•]\s+/gm, "• ");
+      t = t.replace(/\n{3,}/g, "\n\n");
+
+      // split into paragraphs
+      const parts = t.split(/\n+/).map(p => p.trim()).filter(Boolean);
+      return parts.map(p => `<p>${p}</p>`).join("");
+    }
 
     async function loadQuestions() {
       const list = document.getElementById("questionList");
@@ -438,10 +464,10 @@
       const topic = document.getElementById("topic").value.trim();
       const message = document.getElementById("searchMessage");
       if (!topic) {
-        message.textContent = "Enter a physics question to get started.";
+        message.innerHTML = "<p>Enter a physics question to get started.</p>";
         return;
       }
-      message.textContent = "Thinking...";
+      message.innerHTML = "<p>Thinking...</p>";
       try {
         const response = await fetch("/api/chat", {
           method: "POST",
@@ -450,9 +476,9 @@
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Failed");
-        message.textContent = data.answer;
+        message.innerHTML = formatAIAnswer(data.answer);
       } catch {
-        message.textContent = "Unable to get an answer. Please try again.";
+        message.innerHTML = "<p>Unable to get an answer. Please try again.</p>";
       }
     }
 
