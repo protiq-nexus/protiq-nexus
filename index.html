@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="ProtiQ Nexus — Explore physics through research, interactive experiments, Olympiad challenges and scientific tools.">
+  <meta name="description" content="ProtiQ Nexus — Physics research, Olympiad questions and scientific tools.">
   <title>ProtiQ Nexus | ProtiQ Labs</title>
   <style>
     :root {
@@ -15,8 +14,9 @@
       --blue: #65aaff;
       --cyan: #54ead5;
       --border: #24334a;
+      --success: #3dd68c;
+      --danger: #ff6b6b;
     }
-
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
@@ -27,7 +27,7 @@
       line-height: 1.65;
     }
     a { color: inherit; text-decoration: none; }
-    button, input { font: inherit; }
+    button, input, select { font: inherit; }
 
     header {
       position: sticky;
@@ -54,7 +54,7 @@
     .hero {
       max-width: 1180px;
       margin: auto;
-      padding: 100px 24px 85px;
+      padding: 80px 24px 60px;
       display: grid;
       grid-template-columns: 1.2fr .8fr;
       align-items: center;
@@ -68,21 +68,22 @@
       text-transform: uppercase;
     }
     h1 {
-      font-size: clamp(42px, 6vw, 72px);
+      font-size: clamp(36px, 5.5vw, 64px);
       line-height: 1.08;
-      letter-spacing: -3px;
-      margin: 20px 0;
+      letter-spacing: -2.5px;
+      margin: 16px 0;
     }
     h1 span {
       background: linear-gradient(90deg, var(--blue), var(--cyan));
       color: transparent;
       background-clip: text;
+      -webkit-background-clip: text;
     }
-    .hero p, .section-intro { color: var(--muted); max-width: 610px; }
-    .actions { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 30px; }
+    .hero p { color: var(--muted); max-width: 560px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
     .btn {
       display: inline-block;
-      padding: 12px 20px;
+      padding: 11px 18px;
       border: 1px solid var(--border);
       border-radius: 9px;
       color: var(--text);
@@ -95,108 +96,134 @@
       color: #06101b;
       font-weight: 800;
     }
+    .btn:hover { opacity: .9; }
     .visual {
-      min-height: 330px;
+      min-height: 280px;
       border: 1px solid #29465d;
       border-radius: 24px;
       display: grid;
       place-items: center;
       position: relative;
       overflow: hidden;
-      background:
-        radial-gradient(ellipse at center, #16375b 0%, #0d192b 43%, #0a1020 75%);
+      background: radial-gradient(ellipse at center, #16375b 0%, #0d192b 43%, #0a1020 75%);
     }
     .orbit {
       position: absolute;
-      width: 230px;
-      height: 100px;
+      width: 210px;
+      height: 90px;
       border: 1px solid #54ead588;
       border-radius: 50%;
       transform: rotate(-35deg);
     }
     .orbit.two { transform: rotate(35deg); border-color: #65aaff88; }
     .atom {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       background: var(--cyan);
-      box-shadow: 0 0 35px var(--cyan);
+      box-shadow: 0 0 30px var(--cyan);
       z-index: 1;
     }
-    .visual-label {
-      position: absolute;
-      bottom: 22px;
-      font-size: 12px;
-      letter-spacing: 4px;
-      color: var(--muted);
-    }
 
-    .stats {
-      max-width: 1132px;
-      margin: 0 auto 70px;
-      padding: 25px;
-      display: grid;
-      grid-template-columns: repeat(3,1fr);
-      gap: 20px;
-      border: 1px solid var(--border);
-      border-radius: 15px;
-      background: #0d1524;
-    }
-    .stat { text-align: center; }
-    .stat strong { display: block; font-size: 20px; color: var(--cyan); }
-    .stat span { font-size: 12px; color: var(--muted); }
-
-    section { padding: 65px 24px; }
+    section { padding: 55px 24px; }
     .inner { max-width: 1132px; margin: auto; }
-    .section-title { font-size: clamp(29px, 4vw, 42px); margin: 8px 0; letter-spacing: -1px; }
-    .section-intro { margin-bottom: 32px; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: 18px;
+    .section-title { font-size: clamp(26px, 3.5vw, 36px); margin: 6px 0 8px; letter-spacing: -1px; }
+    .section-intro { color: var(--muted); margin-bottom: 28px; max-width: 620px; }
+
+    /* Olympiad */
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 28px;
     }
-    .card {
-      padding: 25px;
+    .filter-btn {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .filter-btn.active, .filter-btn:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      background: rgba(84,234,213,.08);
+    }
+
+    .question-list { display: flex; flex-direction: column; gap: 16px; }
+    .q-card {
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 15px;
-      transition: transform .2s, border-color .2s;
+      border-radius: 14px;
+      padding: 22px;
     }
-    .card:hover { transform: translateY(-4px); border-color: var(--blue); }
-    .symbol { font-size: 27px; }
-    .card h3 { margin: 10px 0 6px; }
-    .card p { color: var(--muted); font-size: 14px; }
-    .tag { font-size: 11px; color: var(--cyan); letter-spacing: 1px; }
-    .text-link { display: inline-block; margin-top: 9px; color: var(--blue); font-size: 13px; }
-    .highlight {
-      border: 1px solid #295a70;
-      background: linear-gradient(120deg,#102238,#102a31);
-      border-radius: 18px;
-      padding: 35px;
+    .q-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
     }
-    .searchbar { display: flex; gap: 10px; margin: 25px 0; }
-    .searchbar input {
-      flex: 1; min-width: 0;
-      padding: 13px;
+    .tag {
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(101,170,255,.12);
+      color: var(--blue);
+    }
+    .tag.level { background: rgba(84,234,213,.12); color: var(--cyan); }
+    .q-text { font-size: 16px; margin: 0 0 16px; font-weight: 500; }
+    .options { display: grid; gap: 8px; }
+    .option {
+      padding: 11px 14px;
       border: 1px solid var(--border);
-      border-radius: 9px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: .15s;
       background: #0a1120;
-      color: var(--text);
     }
-    #searchMessage { color: var(--cyan); font-size: 13px; }
-    footer { border-top: 1px solid var(--border); padding: 30px 24px; color: var(--muted); font-size: 12px; }
-    .footer-inner { max-width: 1132px; margin: auto; display: flex; justify-content: space-between; gap: 15px; flex-wrap: wrap; }
+    .option:hover { border-color: var(--blue); }
+    .option.selected { border-color: var(--blue); background: rgba(101,170,255,.1); }
+    .option.correct { border-color: var(--success); background: rgba(61,214,140,.12); color: var(--success); }
+    .option.wrong { border-color: var(--danger); background: rgba(255,107,107,.1); color: var(--danger); }
+    .q-actions { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .explanation {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(84,234,213,.07);
+      border: 1px solid rgba(84,234,213,.2);
+      color: var(--muted);
+      font-size: 14px;
+      display: none;
+    }
+    .explanation.show { display: block; }
+    .empty, .loading {
+      text-align: center;
+      color: var(--muted);
+      padding: 40px 20px;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 24px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .footer-inner {
+      max-width: 1132px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
     @media (max-width: 720px) {
-      .navlinks { gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-      .navlinks a { font-size: 11px; }
-      .hero { grid-template-columns: 1fr; padding-top: 65px; }
-      .visual { min-height: 260px; }
-      .grid { grid-template-columns: 1fr; }
-      .stats { margin: 0 18px 35px; padding: 17px 8px; gap: 8px; }
-      .stat strong { font-size: 16px; }
-      .stat span { font-size: 10px; }
-      h1 { letter-spacing: -2px; }
+      .hero { grid-template-columns: 1fr; padding-top: 50px; }
+      .visual { min-height: 220px; }
+      .navlinks { gap: 10px; font-size: 12px; }
     }
   </style>
 </head>
@@ -205,8 +232,7 @@
     <nav>
       <a class="logo" href="#home">ProtiQ<span> Labs</span></a>
       <div class="navlinks">
-        <a href="#platform">Platform</a>
-        <a href="#research">Research</a>
+        <a href="#home">Home</a>
         <a href="#olympiad">Olympiad</a>
         <a href="#about">About</a>
       </div>
@@ -219,85 +245,38 @@
         <div class="eyebrow">An initiative by ProtiQ Labs</div>
         <h1>Think deeper.<br>Explore <span>physics.</span></h1>
         <p>
-          Welcome to ProtiQ Nexus — a growing platform connecting physics
-          research, interactive experiments, Olympiad preparation and
-          scientific computing in one place.
+          ProtiQ Nexus — physics research, interactive learning and Olympiad preparation in one place.
         </p>
         <div class="actions">
-          <a class="btn primary" href="#platform">Explore the platform ↗</a>
-          <a class="btn" href="#research">Discover research</a>
+          <a class="btn primary" href="#olympiad">Start Olympiad Practice ↗</a>
         </div>
       </div>
-      <div class="visual" aria-label="Abstract atomic orbit illustration">
+      <div class="visual" aria-label="Abstract atom">
         <div class="orbit"></div>
         <div class="orbit two"></div>
         <div class="atom"></div>
-        <div class="visual-label">QUESTION · EXPERIMENT · DISCOVER</div>
       </div>
     </section>
 
-    <div class="stats">
-      <div class="stat"><strong>01 / Research</strong><span>Ideas and discoveries</span></div>
-      <div class="stat"><strong>02 / Experiment</strong><span>Explore physical systems</span></div>
-      <div class="stat"><strong>03 / Challenge</strong><span>Build problem-solving skills</span></div>
-    </div>
-
-    <section id="platform">
+    <section id="olympiad">
       <div class="inner">
-        <div class="eyebrow">The ecosystem</div>
-        <h2 class="section-title">One platform. Four directions.</h2>
-        <p class="section-intro">From the first question to a deeper scientific understanding, discover your path.</p>
+        <div class="eyebrow">Practice</div>
+        <h2 class="section-title">Olympiad Question Bank</h2>
+        <p class="section-intro">
+          Topic-wise physics questions with answers and explanations. Select a topic to begin.
+        </p>
 
-        <div class="grid">
-          <article class="card" id="research">
-            <div class="symbol">⌘</div>
-            <div class="tag">01 — KNOWLEDGE</div>
-            <h3>Research Hub</h3>
-            <p>A planned space to discover, organize and share physics research, papers, project reports and scientific ideas.</p>
-            <a class="text-link" href="#contribute">Explore research →</a>
-          </article>
-
-          <article class="card" id="experiments">
-            <div class="symbol">⚛</div>
-            <div class="tag">02 — INTERACTIVE SCIENCE</div>
-            <h3>Virtual Experiments</h3>
-            <p>Explore physical concepts through interactive simulations, visual models and experiments designed for learning.</p>
-            <a class="text-link" href="#contribute">Explore experiments →</a>
-          </article>
-
-          <article class="card" id="olympiad">
-            <div class="symbol">◇</div>
-            <div class="tag">03 — PROBLEM SOLVING</div>
-            <h3>Olympiad Arena</h3>
-            <p>Prepare for physics competitions with conceptual challenges, practice problems and step-by-step solutions.</p>
-            <a class="text-link" href="#contribute">Explore challenges →</a>
-          </article>
-
-          <article class="card" id="tools">
-            <div class="symbol">∑</div>
-            <div class="tag">04 — SCIENTIFIC COMPUTING</div>
-            <h3>Physics Tools</h3>
-            <p>A future collection of scientific calculators, data visualizations and computational tools for physics learners.</p>
-            <a class="text-link" href="#contribute">Explore tools →</a>
-          </article>
+        <div class="filters" id="topicFilters">
+          <button class="filter-btn active" data-topic="all">All</button>
+          <button class="filter-btn" data-topic="Mechanics">Mechanics</button>
+          <button class="filter-btn" data-topic="Electricity">Electricity</button>
+          <button class="filter-btn" data-topic="Optics">Optics</button>
+          <button class="filter-btn" data-topic="Thermodynamics">Thermodynamics</button>
+          <button class="filter-btn" data-topic="Modern Physics">Modern Physics</button>
         </div>
-      </div>
-    </section>
 
-    <section id="contribute">
-      <div class="inner">
-        <div class="highlight">
-          <div class="eyebrow">Built for curious minds</div>
-          <h2 class="section-title">Every discovery starts with a question.</h2>
-          <p class="section-intro">
-            ProtiQ Nexus is an evolving project. Our goal is to make physics
-            more accessible, interactive and connected to real scientific work.
-          </p>
-          <div class="searchbar">
-            <input id="topic" type="text" placeholder="What physics topic interests you?">
-            <button class="btn primary" onclick="exploreTopic()">Explore</button>
-          </div>
-          <p id="searchMessage" aria-live="polite"></p>
+        <div class="question-list" id="questionList">
+          <div class="loading">Loading questions...</div>
         </div>
       </div>
     </section>
@@ -307,9 +286,7 @@
         <div class="eyebrow">Our mission</div>
         <h2 class="section-title">Beyond memorizing equations.</h2>
         <p class="section-intro">
-          ProtiQ Labs aims to build useful scientific software that helps
-          students and researchers ask better questions, test ideas and
-          understand the physical world.
+          ProtiQ Labs builds useful scientific tools that help students ask better questions and understand physics deeply.
         </p>
       </div>
     </section>
@@ -325,47 +302,102 @@
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
-   
-async function exploreTopic() {
-  const topic = document.getElementById("topic").value.trim();
-  const message = document.getElementById("searchMessage");
+    let allQuestions = [];
+    let currentTopic = "all";
 
-  if (!topic) {
-    message.textContent = "Enter a physics question to get started.";
-    return;
-  }
+    async function loadQuestions() {
+      const list = document.getElementById("questionList");
+      list.innerHTML = '<div class="loading">Loading questions...</div>';
 
-  message.textContent = "Thinking...";
+      try {
+        const res = await fetch("/api/questions");
+        const data = await res.json();
 
-  try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: "user",
-            content: topic
-          }
-        ]
-      })
-    });
+        if (!data.success) throw new Error("Failed to load");
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "AI request failed.");
+        allQuestions = data.questions || [];
+        renderQuestions();
+      } catch (err) {
+        list.innerHTML = '<div class="empty">Could not load questions. Please try again.</div>';
+      }
     }
 
-    message.textContent = data.answer;
-  } catch (error) {
-    message.textContent =
-      "Unable to get an answer. Please try again.";
-  }
-}
+    function renderQuestions() {
+      const list = document.getElementById("questionList");
+      const filtered = currentTopic === "all"
+        ? allQuestions
+        : allQuestions.filter(q => q.topic === currentTopic);
 
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="empty">No questions found for this topic.</div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map((q, idx) => {
+        let options = [];
+        try {
+          options = typeof q.options === "string" ? JSON.parse(q.options) : q.options;
+        } catch {
+          options = [];
+        }
+
+        const optsHtml = options.map((opt, i) =>
+          `<div class="option" data-q="${q.id}" data-opt="${opt}" onclick="selectOption(this, ${q.id}, '${String(opt).replace(/'/g, "\\'")}', '${String(q.correct_answer).replace(/'/g, "\\'")}')">${opt}</div>`
+        ).join("");
+
+        return `
+          <article class="q-card" id="q-${q.id}">
+            <div class="q-meta">
+              <span class="tag">${q.topic}</span>
+              <span class="tag level">${q.level}</span>
+            </div>
+            <p class="q-text">${idx + 1}. ${q.question}</p>
+            <div class="options">${optsHtml}</div>
+            <div class="q-actions">
+              <button class="btn" onclick="showAnswer(${q.id})">Show Answer</button>
+            </div>
+            <div class="explanation" id="exp-${q.id}">
+              <strong>Answer:</strong> ${q.correct_answer}<br>
+              <strong>Explanation:</strong> ${q.explanation}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function selectOption(el, qId, selected, correct) {
+      const card = document.getElementById("q-" + qId);
+      const options = card.querySelectorAll(".option");
+      options.forEach(o => {
+        o.classList.remove("selected", "correct", "wrong");
+        o.style.pointerEvents = "none";
+      });
+
+      if (selected === correct) {
+        el.classList.add("correct");
+      } else {
+        el.classList.add("wrong");
+        options.forEach(o => {
+          if (o.dataset.opt === correct) o.classList.add("correct");
+        });
+      }
+      showAnswer(qId);
+    }
+
+    function showAnswer(qId) {
+      const exp = document.getElementById("exp-" + qId);
+      if (exp) exp.classList.add("show");
+    }
+
+    document.getElementById("topicFilters").addEventListener("click", (e) => {
+      if (!e.target.classList.contains("filter-btn")) return;
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      currentTopic = e.target.dataset.topic;
+      renderQuestions();
+    });
+
+    loadQuestions();
   </script>
 </body>
 </html>
