@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Olympiad | ProtiQ Nexus</title>
+  <style>
+    :root {
+      --bg: #080d19; --panel: #101a2b; --text: #f2f6ff; --muted: #a1b0c8;
+      --blue: #65aaff; --cyan: #54ead5; --border: #24334a;
+      --success: #3dd68c; --danger: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: Inter, Arial, sans-serif; line-height: 1.65; min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+
+    header { border-bottom: 1px solid var(--border); background: rgba(8,13,25,.95); }
+    nav {
+      max-width: 1100px; margin: auto; padding: 14px 20px;
+      display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    }
+    .logo { font-size: 20px; font-weight: 800; }
+    .logo span { color: var(--cyan); }
+    .navlinks { display: flex; gap: 18px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+    .navlinks a:hover, .navlinks a.active { color: var(--cyan); }
+
+    .wrap { max-width: 900px; margin: auto; padding: 40px 20px 60px; }
+    .eyebrow {
+      color: var(--cyan); font-size: 12px; letter-spacing: 3px;
+      font-weight: 700; text-transform: uppercase;
+    }
+    h1 { font-size: clamp(28px, 4vw, 40px); margin: 8px 0 10px; letter-spacing: -1px; }
+    .intro { color: var(--muted); margin-bottom: 24px; }
+
+    .filters { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+    .filter-btn {
+      padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); cursor: pointer; font-size: 13px;
+    }
+    .filter-btn.active, .filter-btn:hover {
+      border-color: var(--cyan); color: var(--cyan); background: rgba(84,234,213,.08);
+    }
+
+    .question-list { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
+    .q-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px;
+    }
+    .q-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; font-size: 12px; }
+    .tag {
+      padding: 3px 10px; border-radius: 999px;
+      background: rgba(101,170,255,.12); color: var(--blue);
+    }
+    .tag.level { background: rgba(84,234,213,.12); color: var(--cyan); }
+    .q-text { font-size: 15px; margin: 0 0 14px; font-weight: 500; }
+    .options { display: grid; gap: 8px; }
+    .option {
+      padding: 10px 13px; border: 1px solid var(--border); border-radius: 10px;
+      cursor: pointer; background: #0a1120; transition: .15s;
+    }
+    .option:hover { border-color: var(--blue); }
+    .option.correct { border-color: var(--success); background: rgba(61,214,140,.12); color: var(--success); }
+    .option.wrong { border-color: var(--danger); background: rgba(255,107,107,.1); color: var(--danger); }
+    .q-actions { margin-top: 12px; }
+    .btn {
+      padding: 9px 14px; border: 1px solid var(--border); border-radius: 9px;
+      background: transparent; color: var(--text); cursor: pointer;
+    }
+    .explanation {
+      margin-top: 12px; padding: 12px 14px; border-radius: 10px;
+      background: rgba(84,234,213,.07); border: 1px solid rgba(84,234,213,.2);
+      color: var(--muted); font-size: 14px; display: none;
+    }
+    .explanation.show { display: block; }
+    .empty, .loading { text-align: center; color: var(--muted); padding: 40px 16px; }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 18px; text-align: center;
+      color: var(--muted); font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a class="logo" href="/">ProtiQ<span> Labs</span></a>
+      <div class="navlinks">
+        <a href="/">Home</a>
+        <a href="/olympiad.html" class="active">Olympiad</a>
+        <a href="/research.html">Research</a>
+        <a href="/ai.html">AI</a>
+        <a href="/profile.html">Profile</a>
+      </div>
+    </nav>
+  </header>
+
+  <div class="wrap">
+    <div class="eyebrow">Practice</div>
+    <h1>Olympiad Question Bank</h1>
+    <p class="intro">Physics questions by topic and level. Select options to check answers.</p>
+
+    <div class="filters" id="topicFilters">
+      <button class="filter-btn active" data-topic="all">All Topics</button>
+      <button class="filter-btn" data-topic="Mechanics">Mechanics</button>
+      <button class="filter-btn" data-topic="Electricity">Electricity</button>
+      <button class="filter-btn" data-topic="Optics">Optics</button>
+      <button class="filter-btn" data-topic="Thermodynamics">Thermodynamics</button>
+      <button class="filter-btn" data-topic="Modern Physics">Modern Physics</button>
+    </div>
+
+    <div class="filters" id="levelFilters">
+      <button class="filter-btn active" data-level="all">All Levels</button>
+      <button class="filter-btn" data-level="Beginner">Beginner</button>
+      <button class="filter-btn" data-level="Intermediate">Intermediate</button>
+      <button class="filter-btn" data-level="Advanced">Advanced</button>
+    </div>
+
+    <div class="question-list" id="questionList">
+      <div class="loading">Loading questions...</div>
+    </div>
+  </div>
+
+  <footer>© <span id="year"></span> ProtiQ Labs · ProtiQ Nexus</footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    let allQuestions = [];
+    let currentTopic = "all";
+    let currentLevel = "all";
+
+    async function loadQuestions() {
+      const list = document.getElementById("questionList");
+      list.innerHTML = '<div class="loading">Loading questions...</div>';
+      try {
+        const res = await fetch("/api/questions");
+        const data = await res.json();
+        if (!data.success) throw new Error("Failed");
+        allQuestions = data.questions || [];
+        renderQuestions();
+      } catch {
+        list.innerHTML = '<div class="empty">Could not load questions.</div>';
+      }
+    }
+
+    function renderQuestions() {
+      const list = document.getElementById("questionList");
+      let filtered = allQuestions;
+      if (currentTopic !== "all") filtered = filtered.filter(q => q.topic === currentTopic);
+      if (currentLevel !== "all") filtered = filtered.filter(q => q.level === currentLevel);
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="empty">No questions for this filter.</div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map((q, idx) => {
+        let options = [];
+        try {
+          options = typeof q.options === "string" ? JSON.parse(q.options) : (q.options || []);
+        } catch { options = []; }
+
+        const optsHtml = options.map(opt => {
+          const safe = String(opt).replace(/'/g, "\\'");
+          const safeAns = String(q.correct_answer).replace(/'/g, "\\'");
+          return `<div class="option" data-opt="${safe}" onclick="selectOption(this, ${q.id}, '${safe}', '${safeAns}')">${opt}</div>`;
+        }).join("");
+
+        return `
+          <article class="q-card" id="q-${q.id}">
+            <div class="q-meta">
+              <span class="tag">${q.topic}</span>
+              <span class="tag level">${q.level}</span>
+            </div>
+            <p class="q-text">${idx + 1}. ${q.question}</p>
+            <div class="options">${optsHtml}</div>
+            <div class="q-actions">
+              <button class="btn" onclick="showAnswer(${q.id})">Show Answer</button>
+            </div>
+            <div class="explanation" id="exp-${q.id}">
+              <strong>Answer:</strong> ${q.correct_answer}<br>
+              <strong>Explanation:</strong> ${q.explanation}
+            </div>
+          </article>`;
+      }).join("");
+    }
+
+    function selectOption(el, qId, selected, correct) {
+      const card = document.getElementById("q-" + qId);
+      const options = card.querySelectorAll(".option");
+      options.forEach(o => {
+        o.classList.remove("correct", "wrong");
+        o.style.pointerEvents = "none";
+      });
+      if (selected === correct) el.classList.add("correct");
+      else {
+        el.classList.add("wrong");
+        options.forEach(o => { if (o.dataset.opt === correct) o.classList.add("correct"); });
+      }
+      showAnswer(qId);
+    }
+
+    function showAnswer(qId) {
+      const exp = document.getElementById("exp-" + qId);
+      if (exp) exp.classList.add("show");
+    }
+
+    document.getElementById("topicFilters").addEventListener("click", e => {
+      if (!e.target.classList.contains("filter-btn")) return;
+      document.querySelectorAll("#topicFilters .filter-btn").forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      currentTopic = e.target.dataset.topic;
+      renderQuestions();
+    });
+
+    document.getElementById("levelFilters").addEventListener("click", e => {
+      if (!e.target.classList.contains("filter-btn")) return;
+      document.querySelectorAll("#levelFilters .filter-btn").forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      currentLevel = e.target.dataset.level;
+      renderQuestions();
+    });
+
+    loadQuestions();
+  </script>
+</body>
+</html>
