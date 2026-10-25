@@ -8,7 +8,7 @@ export async function onRequestGet({ env }) {
     }
 
     const result = await env.DB.prepare(`
-      SELECT id, title, authors, abstract, subject, file_url
+      SELECT id, title, authors, abstract, subject, file_url, doi
       FROM research
       ORDER BY id DESC
     `).all();
