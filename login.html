@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | ProtiQ Nexus</title>
+  <style>
+    :root {
+      --bg: #080d19; --panel: #101a2b; --text: #f2f6ff; --muted: #a1b0c8;
+      --blue: #65aaff; --cyan: #54ead5; --border: #24334a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: Inter, Arial, sans-serif; min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    button, input { font: inherit; }
+
+    header { border-bottom: 1px solid var(--border); }
+    nav {
+      max-width: 1100px; margin: auto; padding: 14px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .logo { font-size: 20px; font-weight: 800; color: var(--text); }
+    .logo span { color: var(--cyan); }
+
+    main {
+      flex: 1; display: grid; place-items: center; padding: 40px 16px;
+    }
+    .card {
+      width: 100%; max-width: 420px; background: var(--panel);
+      border: 1px solid var(--border); border-radius: 16px; padding: 28px;
+    }
+    h1 { margin: 0 0 8px; font-size: 26px; }
+    .sub { color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+    .tab {
+      flex: 1; padding: 10px; border-radius: 9px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); cursor: pointer;
+    }
+    .tab.active {
+      border-color: var(--cyan); color: var(--cyan);
+      background: rgba(84,234,213,.08);
+    }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    input {
+      width: 100%; padding: 12px; margin-bottom: 14px;
+      border: 1px solid var(--border); border-radius: 9px;
+      background: #0a1120; color: var(--text);
+    }
+    .btn {
+      width: 100%; padding: 12px; border: 0; border-radius: 9px; cursor: pointer;
+      background: linear-gradient(100deg, #347cf0, #24b8b0);
+      color: #06101b; font-weight: 800; margin-top: 4px;
+    }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+    .msg { margin-top: 14px; font-size: 14px; color: var(--cyan); min-height: 20px; }
+    .msg.error { color: #ff6b6b; }
+    .form { display: none; }
+    .form.active { display: block; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a class="logo" href="/">ProtiQ<span> Labs</span></a>
+      <a href="/" style="color:#a1b0c8;font-size:13px;">← Home</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="card">
+      <h1>Welcome</h1>
+      <p class="sub">Sign in free to use Olympiad, Research and AI tools.</p>
+
+      <div class="tabs">
+        <button class="tab active" data-mode="login">Login</button>
+        <button class="tab" data-mode="signup">Sign up</button>
+      </div>
+
+      <form id="loginForm" class="form active">
+        <label>Email</label>
+        <input type="email" id="loginEmail" required placeholder="you@email.com">
+        <label>Password</label>
+        <input type="password" id="loginPassword" required minlength="6" placeholder="••••••••">
+        <button class="btn" type="submit">Login</button>
+      </form>
+
+      <form id="signupForm" class="form">
+        <label>Email</label>
+        <input type="email" id="signupEmail" required placeholder="you@email.com">
+        <label>Password</label>
+        <input type="password" id="signupPassword" required minlength="6" placeholder="At least 6 characters">
+        <button class="btn" type="submit">Create account</button>
+      </form>
+
+      <div class="msg" id="msg"></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://dylkrvdnyefdeuxtchji.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_TKT7t7VRfK2eeeCzevsc0w_JyfeJ-2r";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const msg = document.getElementById("msg");
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".form").forEach(f => f.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.mode + "Form").classList.add("active");
+        msg.textContent = "";
+        msg.className = "msg";
+      });
+    });
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.className = "msg";
+      msg.textContent = "Signing in...";
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        msg.className = "msg error";
+        msg.textContent = error.message;
+        return;
+      }
+      msg.textContent = "Success! Redirecting...";
+      window.location.href = "/profile.html";
+    });
+
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.className = "msg";
+      msg.textContent = "Creating account...";
+      const email = document.getElementById("signupEmail").value.trim();
+      const password = document.getElementById("signupPassword").value;
+
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        msg.className = "msg error";
+        msg.textContent = error.message;
+        return;
+      }
+      msg.textContent = "Account created! You can login now.";
+      document.querySelector('[data-mode="login"]').click();
+    });
+
+    // already logged in?
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) window.location.href = "/profile.html";
+    });
+  </script>
+</body>
+</html>
