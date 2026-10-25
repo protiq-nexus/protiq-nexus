@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="ProtiQ Nexus — Physics research, Olympiad questions and scientific tools.">
+  <meta name="description" content="ProtiQ Nexus — Physics Olympiad, Research, AI and Experiments.">
   <title>ProtiQ Nexus | ProtiQ Labs</title>
   <style>
     :root {
@@ -14,185 +14,111 @@
       --blue: #65aaff;
       --cyan: #54ead5;
       --border: #24334a;
-      --success: #3dd68c;
-      --danger: #ff6b6b;
     }
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
     body {
       margin: 0;
       background: var(--bg);
       color: var(--text);
       font-family: Inter, Arial, sans-serif;
       line-height: 1.65;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     a { color: inherit; text-decoration: none; }
-    button, input { font: inherit; }
 
     header {
-      position: sticky; top: 0; z-index: 10;
-      background: rgba(8,13,25,.92);
-      backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border);
+      background: rgba(8,13,25,.95);
     }
     nav {
-      max-width: 1180px; margin: auto; padding: 15px 24px;
-      display: flex; justify-content: space-between; align-items: center; gap: 20px;
+      max-width: 1100px;
+      margin: auto;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
     }
-    .logo { font-size: 21px; font-weight: 800; letter-spacing: -.7px; }
+    .logo { font-size: 20px; font-weight: 800; }
     .logo span { color: var(--cyan); }
-    .navlinks { display: flex; gap: 20px; font-size: 13px; color: var(--muted); }
-    .navlinks a:hover { color: var(--cyan); }
+    .navlinks { display: flex; gap: 18px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+    .navlinks a:hover, .navlinks a.active { color: var(--cyan); }
 
+    main { flex: 1; }
     .hero {
-      max-width: 1180px; margin: auto; padding: 90px 24px 70px;
-      display: grid; grid-template-columns: 1.2fr .8fr; align-items: center; gap: 45px;
+      max-width: 1100px;
+      margin: auto;
+      padding: 70px 20px 40px;
+      text-align: center;
     }
     .eyebrow {
-      color: var(--cyan); font-size: 12px; letter-spacing: 3px;
-      font-weight: 700; text-transform: uppercase;
+      color: var(--cyan);
+      font-size: 12px;
+      letter-spacing: 3px;
+      font-weight: 700;
+      text-transform: uppercase;
     }
     h1 {
-      font-size: clamp(38px, 5.5vw, 68px); line-height: 1.08;
-      letter-spacing: -2.5px; margin: 16px 0;
+      font-size: clamp(34px, 6vw, 56px);
+      line-height: 1.1;
+      letter-spacing: -2px;
+      margin: 14px 0;
     }
     h1 span {
       background: linear-gradient(90deg, var(--blue), var(--cyan));
-      color: transparent; background-clip: text; -webkit-background-clip: text;
+      color: transparent;
+      background-clip: text;
+      -webkit-background-clip: text;
     }
-    .hero p, .section-intro { color: var(--muted); max-width: 600px; }
-    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
-    .btn {
-      display: inline-block; padding: 11px 18px;
-      border: 1px solid var(--border); border-radius: 9px;
-      color: var(--text); cursor: pointer; background: transparent;
+    .hero p {
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto 28px;
     }
-    .btn.primary {
-      background: linear-gradient(100deg, #347cf0, #24b8b0);
-      border: 0; color: #06101b; font-weight: 800;
-    }
-    .btn:hover { opacity: .92; }
-    .visual {
-      min-height: 300px; border: 1px solid #29465d; border-radius: 24px;
-      display: grid; place-items: center; position: relative; overflow: hidden;
-      background: radial-gradient(ellipse at center, #16375b 0%, #0d192b 43%, #0a1020 75%);
-    }
-    .orbit {
-      position: absolute; width: 220px; height: 95px;
-      border: 1px solid #54ead588; border-radius: 50%; transform: rotate(-35deg);
-    }
-    .orbit.two { transform: rotate(35deg); border-color: #65aaff88; }
-    .atom {
-      width: 18px; height: 18px; border-radius: 50%;
-      background: var(--cyan); box-shadow: 0 0 32px var(--cyan); z-index: 1;
-    }
-    .visual-label {
-      position: absolute; bottom: 20px; font-size: 11px;
-      letter-spacing: 3px; color: var(--muted);
-    }
-
-    .stats {
-      max-width: 1132px; margin: 0 auto 50px; padding: 22px;
-      display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
-      border: 1px solid var(--border); border-radius: 14px; background: #0d1524;
-    }
-    .stat { text-align: center; }
-    .stat strong { display: block; font-size: 18px; color: var(--cyan); }
-    .stat span { font-size: 12px; color: var(--muted); }
-
-    section { padding: 55px 24px; }
-    .inner { max-width: 1132px; margin: auto; }
-    .section-title { font-size: clamp(26px, 3.5vw, 38px); margin: 6px 0 10px; letter-spacing: -1px; }
 
     .grid {
-      display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px;
+      max-width: 1100px;
+      margin: 0 auto 60px;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
     }
     .card {
-      padding: 24px; background: var(--panel);
-      border: 1px solid var(--border); border-radius: 14px;
-      transition: transform .2s, border-color .2s;
+      display: block;
+      padding: 26px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      transition: .2s;
     }
-    .card:hover { transform: translateY(-3px); border-color: var(--blue); }
-    .symbol { font-size: 26px; }
-    .card h3 { margin: 10px 0 6px; }
-    .card p { color: var(--muted); font-size: 14px; }
-    .tag-small { font-size: 11px; color: var(--cyan); letter-spacing: 1px; }
-    .text-link { display: inline-block; margin-top: 8px; color: var(--blue); font-size: 13px; }
-
-    .filters { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
-    .filter-btn {
-      padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border);
-      background: transparent; color: var(--muted); cursor: pointer; font-size: 13px;
+    .card:hover {
+      border-color: var(--cyan);
+      transform: translateY(-3px);
     }
-    .filter-btn.active, .filter-btn:hover {
-      border-color: var(--cyan); color: var(--cyan);
-      background: rgba(84,234,213,.08);
+    .card .icon { font-size: 28px; margin-bottom: 8px; }
+    .card h2 { margin: 0 0 8px; font-size: 20px; }
+    .card p { margin: 0; color: var(--muted); font-size: 14px; }
+    .card .go {
+      display: inline-block;
+      margin-top: 14px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 600;
     }
-
-    .question-list { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
-    .q-card {
-      background: var(--panel); border: 1px solid var(--border);
-      border-radius: 14px; padding: 20px;
-    }
-    .q-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; font-size: 12px; }
-    .tag {
-      padding: 3px 10px; border-radius: 999px;
-      background: rgba(101,170,255,.12); color: var(--blue);
-    }
-    .tag.level { background: rgba(84,234,213,.12); color: var(--cyan); }
-    .q-text { font-size: 15px; margin: 0 0 14px; font-weight: 500; }
-    .options { display: grid; gap: 8px; }
-    .option {
-      padding: 10px 13px; border: 1px solid var(--border); border-radius: 10px;
-      cursor: pointer; background: #0a1120; transition: .15s;
-    }
-    .option:hover { border-color: var(--blue); }
-    .option.correct { border-color: var(--success); background: rgba(61,214,140,.12); color: var(--success); }
-    .option.wrong { border-color: var(--danger); background: rgba(255,107,107,.1); color: var(--danger); }
-    .q-actions { margin-top: 12px; }
-    .explanation {
-      margin-top: 12px; padding: 12px 14px; border-radius: 10px;
-      background: rgba(84,234,213,.07); border: 1px solid rgba(84,234,213,.2);
-      color: var(--muted); font-size: 14px; display: none;
-    }
-    .explanation.show { display: block; }
-    .empty, .loading { text-align: center; color: var(--muted); padding: 36px 16px; }
-
-    .highlight {
-      border: 1px solid #295a70;
-      background: linear-gradient(120deg,#102238,#102a31);
-      border-radius: 16px; padding: 32px;
-    }
-    .searchbar { display: flex; gap: 10px; margin: 20px 0 10px; }
-    .searchbar input {
-      flex: 1; min-width: 0; padding: 12px;
-      border: 1px solid var(--border); border-radius: 9px;
-      background: #0a1120; color: var(--text);
-    }
-    #searchMessage {
-      color: var(--text);
-      font-size: 14px;
-      min-height: 24px;
-      line-height: 1.7;
-      margin-top: 12px;
-    }
-    #searchMessage p { margin: 0 0 10px; color: var(--muted); }
-    #searchMessage strong { color: var(--cyan); font-weight: 600; }
 
     footer {
-      border-top: 1px solid var(--border); padding: 28px 24px;
-      color: var(--muted); font-size: 12px;
-    }
-    .footer-inner {
-      max-width: 1132px; margin: auto;
-      display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+      padding: 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
     }
 
-    @media (max-width: 720px) {
-      .hero { grid-template-columns: 1fr; padding-top: 50px; }
-      .visual { min-height: 220px; }
+    @media (max-width: 700px) {
       .grid { grid-template-columns: 1fr; }
-      .stats { margin: 0 16px 30px; grid-template-columns: 1fr; }
       .navlinks { gap: 10px; font-size: 12px; }
     }
   </style>
@@ -200,289 +126,64 @@
 <body>
   <header>
     <nav>
-      <a class="logo" href="#home">ProtiQ<span> Labs</span></a>
+      <a class="logo" href="/">ProtiQ<span> Labs</span></a>
       <div class="navlinks">
-        <a href="#platform">Platform</a>
-        <a href="#research">Research</a>
-        <a href="#olympiad">Olympiad</a>
-        <a href="#about">About</a>
+        <a href="/" class="active">Home</a>
+        <a href="/olympiad.html">Olympiad</a>
+        <a href="/research.html">Research</a>
+        <a href="/ai.html">AI</a>
+        <a href="/profile.html">Profile</a>
       </div>
     </nav>
   </header>
 
   <main>
-    <section class="hero" id="home">
-      <div>
-        <div class="eyebrow">An initiative by ProtiQ Labs</div>
-        <h1>Think deeper.<br>Explore <span>physics.</span></h1>
-        <p>
-          Welcome to ProtiQ Nexus — physics research, interactive experiments,
-          Olympiad preparation and scientific computing in one place.
-        </p>
-        <div class="actions">
-          <a class="btn primary" href="#olympiad">Start Olympiad Practice ↗</a>
-          <a class="btn" href="#research">Discover research</a>
-        </div>
-      </div>
-      <div class="visual">
-        <div class="orbit"></div>
-        <div class="orbit two"></div>
-        <div class="atom"></div>
-        <div class="visual-label">QUESTION · EXPERIMENT · DISCOVER</div>
-      </div>
+    <section class="hero">
+      <div class="eyebrow">ProtiQ Nexus</div>
+      <h1>Think deeper.<br>Explore <span>physics.</span></h1>
+      <p>
+        Olympiad practice, research papers, AI help and experiments —
+        all in one place. Choose a section to begin.
+      </p>
     </section>
 
-    <div class="stats">
-      <div class="stat"><strong>01 / Research</strong><span>Ideas and discoveries</span></div>
-      <div class="stat"><strong>02 / Experiment</strong><span>Explore physical systems</span></div>
-      <div class="stat"><strong>03 / Challenge</strong><span>Build problem-solving skills</span></div>
+    <div class="grid">
+      <a class="card" href="/olympiad.html">
+        <div class="icon">◇</div>
+        <h2>Olympiad</h2>
+        <p>Topic-wise physics questions with answers and explanations. Practice by level.</p>
+        <span class="go">Open Olympiad →</span>
+      </a>
+
+      <a class="card" href="/research.html">
+        <div class="icon">⌘</div>
+        <h2>Research</h2>
+        <p>Publish and explore physics research papers. Share work with the world.</p>
+        <span class="go">Open Research →</span>
+      </a>
+
+      <a class="card" href="/ai.html">
+        <div class="icon">✦</div>
+        <h2>AI Assistant</h2>
+        <p>Ask any physics question. Get clear explanations powered by AI.</p>
+        <span class="go">Open AI →</span>
+      </a>
+
+      <a class="card" href="/profile.html">
+        <div class="icon">◎</div>
+        <h2>Profile</h2>
+        <p>Your account, progress and settings. More features coming soon.</p>
+        <span class="go">Open Profile →</span>
+      </a>
     </div>
-
-    <section id="platform">
-      <div class="inner">
-        <div class="eyebrow">The ecosystem</div>
-        <h2 class="section-title">One platform. Four directions.</h2>
-        <p class="section-intro">From the first question to a deeper scientific understanding.</p>
-        <div class="grid">
-          <article class="card" id="research">
-            <div class="symbol">⌘</div>
-            <div class="tag-small">01 — KNOWLEDGE</div>
-            <h3>Research Hub</h3>
-            <p>Discover, organize and share physics research, papers, project reports and scientific ideas.</p>
-            <a class="text-link" href="#contribute">Explore research →</a>
-          </article>
-          <article class="card">
-            <div class="symbol">⚛</div>
-            <div class="tag-small">02 — INTERACTIVE SCIENCE</div>
-            <h3>Virtual Experiments</h3>
-            <p>Explore physical concepts through interactive simulations and visual models.</p>
-            <a class="text-link" href="#contribute">Explore experiments →</a>
-          </article>
-          <article class="card">
-            <div class="symbol">◇</div>
-            <div class="tag-small">03 — PROBLEM SOLVING</div>
-            <h3>Olympiad Arena</h3>
-            <p>Prepare for physics competitions with conceptual challenges and step-by-step solutions.</p>
-            <a class="text-link" href="#olympiad">Explore challenges →</a>
-          </article>
-          <article class="card">
-            <div class="symbol">∑</div>
-            <div class="tag-small">04 — SCIENTIFIC COMPUTING</div>
-            <h3>Physics Tools</h3>
-            <p>Scientific calculators, data visualizations and computational tools for physics learners.</p>
-            <a class="text-link" href="#contribute">Explore tools →</a>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section id="olympiad">
-      <div class="inner">
-        <div class="eyebrow">Practice</div>
-        <h2 class="section-title">Olympiad Question Bank</h2>
-        <p class="section-intro">Topic-wise and level-wise physics questions with answers and explanations.</p>
-
-        <div class="filters" id="topicFilters">
-          <button class="filter-btn active" data-topic="all">All Topics</button>
-          <button class="filter-btn" data-topic="Mechanics">Mechanics</button>
-          <button class="filter-btn" data-topic="Electricity">Electricity</button>
-          <button class="filter-btn" data-topic="Optics">Optics</button>
-          <button class="filter-btn" data-topic="Thermodynamics">Thermodynamics</button>
-          <button class="filter-btn" data-topic="Modern Physics">Modern Physics</button>
-        </div>
-
-        <div class="filters" id="levelFilters">
-          <button class="filter-btn active" data-level="all">All Levels</button>
-          <button class="filter-btn" data-level="Beginner">Beginner</button>
-          <button class="filter-btn" data-level="Intermediate">Intermediate</button>
-          <button class="filter-btn" data-level="Advanced">Advanced</button>
-        </div>
-
-        <div class="question-list" id="questionList">
-          <div class="loading">Loading questions...</div>
-        </div>
-      </div>
-    </section>
-
-    <section id="contribute">
-      <div class="inner">
-        <div class="highlight">
-          <div class="eyebrow">Ask AI</div>
-          <h2 class="section-title">Every discovery starts with a question.</h2>
-          <p class="section-intro">Ask any physics question and get a clear explanation.</p>
-          <div class="searchbar">
-            <input id="topic" type="text" placeholder="What physics topic interests you?">
-            <button class="btn primary" onclick="exploreTopic()">Explore</button>
-          </div>
-          <div id="searchMessage" aria-live="polite"></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="about">
-      <div class="inner">
-        <div class="eyebrow">Our mission</div>
-        <h2 class="section-title">Beyond memorizing equations.</h2>
-        <p class="section-intro">
-          ProtiQ Labs aims to build useful scientific software that helps students
-          and researchers ask better questions and understand the physical world.
-        </p>
-      </div>
-    </section>
   </main>
 
   <footer>
-    <div class="footer-inner">
-      <span>© <span id="year"></span> ProtiQ Labs · ProtiQ Nexus</span>
-      <span>Built for the love of physics.</span>
-    </div>
+    © <span id="year"></span> ProtiQ Labs · ProtiQ Nexus
   </footer>
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
-
-    let allQuestions = [];
-    let currentTopic = "all";
-    let currentLevel = "all";
-
-    function formatAIAnswer(text) {
-      if (!text) return "";
-      let t = String(text);
-
-      // remove common markdown noise
-      t = t.replace(/^#{1,6}\s+/gm, "");
-      t = t.replace(/\*\*\*(.*?)\*\*\*/g, "<strong>$1</strong>");
-      t = t.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-      t = t.replace(/\*(.*?)\*/g, "$1");
-      t = t.replace(/`{1,3}([^`]+)`{1,3}/g, "$1");
-      t = t.replace(/^\s*[-•]\s+/gm, "• ");
-      t = t.replace(/\n{3,}/g, "\n\n");
-
-      // split into paragraphs
-      const parts = t.split(/\n+/).map(p => p.trim()).filter(Boolean);
-      return parts.map(p => `<p>${p}</p>`).join("");
-    }
-
-    async function loadQuestions() {
-      const list = document.getElementById("questionList");
-      list.innerHTML = '<div class="loading">Loading questions...</div>';
-      try {
-        const res = await fetch("/api/questions");
-        const data = await res.json();
-        if (!data.success) throw new Error("Failed");
-        allQuestions = data.questions || [];
-        renderQuestions();
-      } catch {
-        list.innerHTML = '<div class="empty">Could not load questions.</div>';
-      }
-    }
-
-    function renderQuestions() {
-      const list = document.getElementById("questionList");
-      let filtered = allQuestions;
-
-      if (currentTopic !== "all") {
-        filtered = filtered.filter(q => q.topic === currentTopic);
-      }
-      if (currentLevel !== "all") {
-        filtered = filtered.filter(q => q.level === currentLevel);
-      }
-
-      if (!filtered.length) {
-        list.innerHTML = '<div class="empty">No questions for this filter.</div>';
-        return;
-      }
-
-      list.innerHTML = filtered.map((q, idx) => {
-        let options = [];
-        try {
-          options = typeof q.options === "string" ? JSON.parse(q.options) : (q.options || []);
-        } catch { options = []; }
-
-        const optsHtml = options.map(opt => {
-          const safe = String(opt).replace(/'/g, "\\'");
-          const safeAns = String(q.correct_answer).replace(/'/g, "\\'");
-          return `<div class="option" data-opt="${safe}" onclick="selectOption(this, ${q.id}, '${safe}', '${safeAns}')">${opt}</div>`;
-        }).join("");
-
-        return `
-          <article class="q-card" id="q-${q.id}">
-            <div class="q-meta">
-              <span class="tag">${q.topic}</span>
-              <span class="tag level">${q.level}</span>
-            </div>
-            <p class="q-text">${idx + 1}. ${q.question}</p>
-            <div class="options">${optsHtml}</div>
-            <div class="q-actions">
-              <button class="btn" onclick="showAnswer(${q.id})">Show Answer</button>
-            </div>
-            <div class="explanation" id="exp-${q.id}">
-              <strong>Answer:</strong> ${q.correct_answer}<br>
-              <strong>Explanation:</strong> ${q.explanation}
-            </div>
-          </article>`;
-      }).join("");
-    }
-
-    function selectOption(el, qId, selected, correct) {
-      const card = document.getElementById("q-" + qId);
-      const options = card.querySelectorAll(".option");
-      options.forEach(o => {
-        o.classList.remove("correct", "wrong");
-        o.style.pointerEvents = "none";
-      });
-      if (selected === correct) el.classList.add("correct");
-      else {
-        el.classList.add("wrong");
-        options.forEach(o => { if (o.dataset.opt === correct) o.classList.add("correct"); });
-      }
-      showAnswer(qId);
-    }
-
-    function showAnswer(qId) {
-      const exp = document.getElementById("exp-" + qId);
-      if (exp) exp.classList.add("show");
-    }
-
-    document.getElementById("topicFilters").addEventListener("click", e => {
-      if (!e.target.classList.contains("filter-btn")) return;
-      document.querySelectorAll("#topicFilters .filter-btn").forEach(b => b.classList.remove("active"));
-      e.target.classList.add("active");
-      currentTopic = e.target.dataset.topic;
-      renderQuestions();
-    });
-
-    document.getElementById("levelFilters").addEventListener("click", e => {
-      if (!e.target.classList.contains("filter-btn")) return;
-      document.querySelectorAll("#levelFilters .filter-btn").forEach(b => b.classList.remove("active"));
-      e.target.classList.add("active");
-      currentLevel = e.target.dataset.level;
-      renderQuestions();
-    });
-
-    async function exploreTopic() {
-      const topic = document.getElementById("topic").value.trim();
-      const message = document.getElementById("searchMessage");
-      if (!topic) {
-        message.innerHTML = "<p>Enter a physics question to get started.</p>";
-        return;
-      }
-      message.innerHTML = "<p>Thinking...</p>";
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: [{ role: "user", content: topic }] })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Failed");
-        message.innerHTML = formatAIAnswer(data.answer);
-      } catch {
-        message.innerHTML = "<p>Unable to get an answer. Please try again.</p>";
-      }
-    }
-
-    loadQuestions();
   </script>
 </body>
 </html>
