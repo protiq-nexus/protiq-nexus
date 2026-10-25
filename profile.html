@@ -15,6 +15,7 @@
       font-family: Inter, Arial, sans-serif; line-height: 1.65; min-height: 100vh;
     }
     a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; }
 
     header { border-bottom: 1px solid var(--border); background: rgba(8,13,25,.95); }
     nav {
@@ -44,17 +45,23 @@
       display: grid; place-items: center; font-size: 28px; font-weight: 800;
       color: #06101b;
     }
-    .card h2 { margin: 0 0 8px; }
-    .card p { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
+    .card h2 { margin: 0 0 6px; }
+    .card p { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
     .badge {
       display: inline-block; padding: 6px 12px; border-radius: 999px;
       border: 1px solid var(--border); color: var(--cyan); font-size: 12px;
     }
-    .note {
-      margin-top: 24px; padding: 16px; border-radius: 12px;
-      background: rgba(84,234,213,.06); border: 1px solid rgba(84,234,213,.15);
-      color: var(--muted); font-size: 14px; text-align: left;
+    .actions { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      padding: 10px 16px; border-radius: 9px; border: 1px solid var(--border);
+      background: transparent; color: var(--text);
     }
+    .btn.primary {
+      border: 0;
+      background: linear-gradient(100deg, #347cf0, #24b8b0);
+      color: #06101b; font-weight: 800;
+    }
+    .hidden { display: none !important; }
 
     footer {
       border-top: 1px solid var(--border); padding: 18px; text-align: center;
@@ -79,28 +86,65 @@
   <div class="wrap">
     <div class="eyebrow">Account</div>
     <h1>Profile</h1>
-    <p class="intro">Your account space on ProtiQ Nexus.</p>
+    <p class="intro">Your account on ProtiQ Nexus.</p>
 
-    <div class="card">
-      <div class="avatar">P</div>
-      <h2>Guest User</h2>
-      <p>You are browsing as a guest. Login and saved progress will come in a future update.</p>
+    <div class="card" id="guestCard">
+      <div class="avatar">?</div>
+      <h2>Guest</h2>
+      <p>Sign in free to save progress and upload research.</p>
+      <span class="badge">Not logged in</span>
+      <div class="actions">
+        <a class="btn primary" href="/login.html">Login / Sign up</a>
+      </div>
+    </div>
+
+    <div class="card hidden" id="userCard">
+      <div class="avatar" id="avatarLetter">U</div>
+      <h2 id="userTitle">User</h2>
+      <p id="userEmail"></p>
       <span class="badge">Free plan · Active</span>
-
-      <div class="note">
-        <strong style="color: var(--cyan);">Coming soon</strong><br>
-        • Login / Sign up<br>
-        • Saved Olympiad progress<br>
-        • Your uploaded research papers<br>
-        • Premium plans for selected sections
+      <div class="actions">
+        <button class="btn" id="logoutBtn">Logout</button>
       </div>
     </div>
   </div>
 
   <footer>© <span id="year"></span> ProtiQ Labs · ProtiQ Nexus</footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
+
+    const SUPABASE_URL = "https://dylkrvdnyefdeuxtchji.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_TKT7t7VRfK2eeeCzevsc0w_JyfeJ-2r";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function loadUser() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const guestCard = document.getElementById("guestCard");
+      const userCard = document.getElementById("userCard");
+
+      if (!session) {
+        guestCard.classList.remove("hidden");
+        userCard.classList.add("hidden");
+        return;
+      }
+
+      const email = session.user.email || "User";
+      const letter = email.charAt(0).toUpperCase();
+      document.getElementById("avatarLetter").textContent = letter;
+      document.getElementById("userTitle").textContent = email.split("@")[0];
+      document.getElementById("userEmail").textContent = email;
+      guestCard.classList.add("hidden");
+      userCard.classList.remove("hidden");
+    }
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      window.location.href = "/login.html";
+    });
+
+    loadUser();
   </script>
 </body>
 </html>
