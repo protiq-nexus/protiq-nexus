@@ -1,9 +1,7 @@
-
 export async function onRequestPost({ request, env }) {
   let uploadedFileName = null;
 
   try {
-    // Check server configuration
     if (!env.DB || !env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) {
       return Response.json(
         { error: "Server configuration is incomplete." },
@@ -11,40 +9,36 @@ export async function onRequestPost({ request, env }) {
       );
     }
 
-    // Accept POST requests only through this handler
     const form = await request.formData();
 
     const title = String(form.get("title") || "").trim();
     const authors = String(form.get("authors") || "").trim();
     const abstract = String(form.get("abstract") || "").trim();
     const subject = String(form.get("subject") || "").trim();
+    const doi = String(form.get("doi") || "").trim();
     const file = form.get("file");
 
-    if (
-      !title ||
-      !authors ||
-      !file ||
-      typeof file === "string"
-    ) {
+    if (!title || !authors || !file || typeof file === "string") {
       return Response.json(
         { error: "Title, authors, and PDF file are required." },
         { status: 400 }
       );
     }
 
-    if (title.length > 200 || authors.length > 300 ||
-        abstract.length > 5000 || subject.length > 100) {
+    if (
+      title.length > 200 ||
+      authors.length > 300 ||
+      abstract.length > 5000 ||
+      subject.length > 100 ||
+      doi.length > 150
+    ) {
       return Response.json(
         { error: "One or more fields exceed the allowed length." },
         { status: 400 }
       );
     }
 
-    // Validate PDF size and basic file signature
-    if (
-      file.size === 0 ||
-      file.size > 10 * 1024 * 1024
-    ) {
+    if (file.size === 0 || file.size > 10 * 1024 * 1024) {
       return Response.json(
         { error: "PDF must be smaller than or equal to 10 MB." },
         { status: 400 }
@@ -65,7 +59,6 @@ export async function onRequestPost({ request, env }) {
     const secretKey = env.SUPABASE_SECRET_KEY;
     const fileName = `${crypto.randomUUID()}.pdf`;
 
-    // Upload PDF to the private Supabase bucket
     const uploadResponse = await fetch(
       `${baseUrl}/storage/v1/object/research-papers/${fileName}`,
       {
@@ -82,7 +75,6 @@ export async function onRequestPost({ request, env }) {
 
     if (!uploadResponse.ok) {
       console.error("Supabase upload failed:", uploadResponse.status);
-
       return Response.json(
         { error: "PDF upload failed. Check Supabase bucket settings." },
         { status: 502 }
@@ -91,13 +83,12 @@ export async function onRequestPost({ request, env }) {
 
     uploadedFileName = fileName;
 
-    // Save research details in Cloudflare D1
     const result = await env.DB.prepare(`
       INSERT INTO research
-        (title, authors, abstract, subject, file_url)
-      VALUES (?, ?, ?, ?, ?)
+        (title, authors, abstract, subject, file_url, doi)
+      VALUES (?, ?, ?, ?, ?, ?)
     `)
-      .bind(title, authors, abstract, subject, fileName)
+      .bind(title, authors, abstract, subject, fileName, doi || null)
       .run();
 
     return Response.json(
@@ -108,11 +99,9 @@ export async function onRequestPost({ request, env }) {
       },
       { status: 201 }
     );
-
   } catch (error) {
     console.error("Research API error:", error);
 
-    // Roll back the uploaded PDF if the database insert failed
     if (uploadedFileName && env.SUPABASE_URL && env.SUPABASE_SECRET_KEY) {
       try {
         const baseUrl = env.SUPABASE_URL.replace(/\/+$/, "");
