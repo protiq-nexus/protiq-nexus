@@ -10,75 +10,38 @@
       --blue: #65aaff; --cyan: #54ead5; --border: #24334a;
     }
     * { box-sizing: border-box; }
-    body {
-      margin: 0; background: var(--bg); color: var(--text);
-      font-family: Inter, Arial, sans-serif; line-height: 1.65; min-height: 100vh;
-    }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, Arial, sans-serif; line-height: 1.65; min-height: 100vh; }
     a { color: inherit; text-decoration: none; }
-    button, input, textarea, select { font: inherit; }
-
+    button, input, textarea { font: inherit; }
     header { border-bottom: 1px solid var(--border); background: rgba(8,13,25,.95); }
-    nav {
-      max-width: 1100px; margin: auto; padding: 14px 20px;
-      display: flex; justify-content: space-between; align-items: center; gap: 16px;
-    }
+    nav { max-width: 1100px; margin: auto; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
     .logo { font-size: 20px; font-weight: 800; }
     .logo span { color: var(--cyan); }
     .navlinks { display: flex; gap: 18px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
     .navlinks a:hover, .navlinks a.active { color: var(--cyan); }
-
     .wrap { max-width: 900px; margin: auto; padding: 40px 20px 60px; }
-    .eyebrow {
-      color: var(--cyan); font-size: 12px; letter-spacing: 3px;
-      font-weight: 700; text-transform: uppercase;
-    }
-    h1 { font-size: clamp(28px, 4vw, 40px); margin: 8px 0 10px; letter-spacing: -1px; }
+    .eyebrow { color: var(--cyan); font-size: 12px; letter-spacing: 3px; font-weight: 700; text-transform: uppercase; }
+    h1 { font-size: clamp(28px, 4vw, 40px); margin: 8px 0 10px; }
     .intro { color: var(--muted); margin-bottom: 28px; }
-
     .tabs { display: flex; gap: 10px; margin-bottom: 24px; }
-    .tab {
-      padding: 10px 16px; border-radius: 9px; border: 1px solid var(--border);
-      background: transparent; color: var(--muted); cursor: pointer;
-    }
-    .tab.active {
-      border-color: var(--cyan); color: var(--cyan);
-      background: rgba(84,234,213,.08);
-    }
-
+    .tab { padding: 10px 16px; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; }
+    .tab.active { border-color: var(--cyan); color: var(--cyan); background: rgba(84,234,213,.08); }
     .panel { display: none; }
     .panel.active { display: block; }
-
-    .form-card, .paper-card {
-      background: var(--panel); border: 1px solid var(--border);
-      border-radius: 14px; padding: 22px; margin-bottom: 14px;
-    }
+    .form-card, .paper-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 14px; }
     label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-    input, textarea, select {
-      width: 100%; padding: 11px 12px; margin-bottom: 14px;
-      border: 1px solid var(--border); border-radius: 9px;
-      background: #0a1120; color: var(--text);
-    }
+    input, textarea { width: 100%; padding: 11px 12px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 9px; background: #0a1120; color: var(--text); }
     textarea { min-height: 100px; resize: vertical; }
-    .btn {
-      padding: 11px 18px; border-radius: 9px; border: 0; cursor: pointer;
-      background: linear-gradient(100deg, #347cf0, #24b8b0);
-      color: #06101b; font-weight: 800;
-    }
-    .btn:disabled { opacity: .6; cursor: not-allowed; }
+    .btn { padding: 11px 18px; border-radius: 9px; border: 0; cursor: pointer; background: linear-gradient(100deg, #347cf0, #24b8b0); color: #06101b; font-weight: 800; }
+    .btn:disabled { opacity: .6; }
     .msg { margin-top: 12px; font-size: 14px; color: var(--cyan); }
     .msg.error { color: #ff6b6b; }
-
     .paper-card h3 { margin: 0 0 8px; font-size: 18px; }
     .meta { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
     .abstract { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
-    .links { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; }
-    .links a { color: var(--blue); }
+    .links a { color: var(--blue); font-size: 13px; }
     .empty, .loading { text-align: center; color: var(--muted); padding: 36px 12px; }
-
-    footer {
-      border-top: 1px solid var(--border); padding: 18px; text-align: center;
-      color: var(--muted); font-size: 12px;
-    }
+    footer { border-top: 1px solid var(--border); padding: 18px; text-align: center; color: var(--muted); font-size: 12px; }
   </style>
 </head>
 <body>
@@ -95,52 +58,44 @@
     </nav>
   </header>
 
-  <div class="wrap">
+  <div class="wrap" id="app" style="display:none">
     <div class="eyebrow">Knowledge</div>
     <h1>Research Hub</h1>
-    <p class="intro">Browse published physics papers or upload your own research.</p>
-
+    <p class="intro">Browse papers or upload your research.</p>
     <div class="tabs">
       <button class="tab active" data-tab="list">Browse Papers</button>
       <button class="tab" data-tab="upload">Upload Paper</button>
     </div>
-
-    <div id="listPanel" class="panel active">
-      <div id="paperList" class="loading">Loading papers...</div>
-    </div>
-
+    <div id="listPanel" class="panel active"><div id="paperList" class="loading">Loading papers...</div></div>
     <div id="uploadPanel" class="panel">
       <div class="form-card">
         <form id="uploadForm">
           <label>Title *</label>
-          <input name="title" required maxlength="200" placeholder="Paper title">
-
+          <input name="title" required maxlength="200">
           <label>Authors *</label>
-          <input name="authors" required maxlength="300" placeholder="Author names">
-
+          <input name="authors" required maxlength="300">
           <label>Subject</label>
-          <input name="subject" maxlength="100" placeholder="e.g. Quantum Mechanics">
-
+          <input name="subject" maxlength="100">
           <label>DOI</label>
-          <input name="doi" maxlength="150" placeholder="e.g. 10.1234/example">
-
+          <input name="doi" maxlength="150" placeholder="10.1234/example">
           <label>Abstract</label>
-          <textarea name="abstract" maxlength="5000" placeholder="Short abstract"></textarea>
-
+          <textarea name="abstract" maxlength="5000"></textarea>
           <label>PDF File * (max 10 MB)</label>
           <input type="file" name="file" accept="application/pdf" required>
-
           <button class="btn" type="submit" id="uploadBtn">Upload Research</button>
           <div class="msg" id="uploadMsg"></div>
         </form>
       </div>
     </div>
   </div>
+  <footer>© <span id="year"></span> ProtiQ Labs</footer>
 
-  <footer>© <span id="year"></span> ProtiQ Labs · ProtiQ Nexus</footer>
-
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
+    const SUPABASE_URL = "https://dylkrvdnyefdeuxtchji.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_TKT7t7VRfK2eeeCzevsc0w_JyfeJ-2r";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     document.querySelectorAll(".tab").forEach(tab => {
       tab.addEventListener("click", () => {
@@ -151,72 +106,56 @@
       });
     });
 
+    function escapeHtml(str) {
+      return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
     async function loadPapers() {
       const box = document.getElementById("paperList");
-      box.innerHTML = '<div class="loading">Loading papers...</div>';
       try {
         const res = await fetch("/api/research-list");
         const data = await res.json();
-        if (!data.success) throw new Error("Failed");
         const papers = data.papers || [];
         if (!papers.length) {
-          box.innerHTML = '<div class="empty">No research papers yet. Be the first to upload.</div>';
+          box.innerHTML = '<div class="empty">No research papers yet.</div>';
           return;
         }
         box.innerHTML = papers.map(p => `
           <article class="paper-card">
             <h3>${escapeHtml(p.title || "Untitled")}</h3>
-            <div class="meta">
-              ${escapeHtml(p.authors || "")}
-              ${p.subject ? " · " + escapeHtml(p.subject) : ""}
-              ${p.doi ? " · DOI: " + escapeHtml(p.doi) : ""}
-            </div>
+            <div class="meta">${escapeHtml(p.authors || "")}${p.subject ? " · " + escapeHtml(p.subject) : ""}${p.doi ? " · DOI: " + escapeHtml(p.doi) : ""}</div>
             ${p.abstract ? `<div class="abstract">${escapeHtml(p.abstract)}</div>` : ""}
-            <div class="links">
-              ${p.doi ? `<a href="https://doi.org/${encodeURIComponent(p.doi)}" target="_blank" rel="noopener">View DOI</a>` : ""}
-            </div>
-          </article>
-        `).join("");
+            <div class="links">${p.doi ? `<a href="https://doi.org/${encodeURIComponent(p.doi)}" target="_blank" rel="noopener">View DOI</a>` : ""}</div>
+          </article>`).join("");
       } catch {
         box.innerHTML = '<div class="empty">Could not load papers.</div>';
       }
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
     }
 
     document.getElementById("uploadForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const btn = document.getElementById("uploadBtn");
       const msg = document.getElementById("uploadMsg");
-      btn.disabled = true;
-      msg.className = "msg";
-      msg.textContent = "Uploading...";
-
+      btn.disabled = true; msg.className = "msg"; msg.textContent = "Uploading...";
       try {
-        const form = e.target;
-        const fd = new FormData(form);
+        const fd = new FormData(e.target);
         const res = await fetch("/api/research", { method: "POST", body: fd });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Upload failed");
-        msg.textContent = data.message || "Uploaded successfully!";
-        form.reset();
-        loadPapers();
+        msg.textContent = data.message || "Uploaded!";
+        e.target.reset(); loadPapers();
         document.querySelector('[data-tab="list"]').click();
       } catch (err) {
-        msg.className = "msg error";
-        msg.textContent = err.message || "Upload failed.";
-      } finally {
-        btn.disabled = false;
-      }
+        msg.className = "msg error"; msg.textContent = err.message || "Upload failed.";
+      } finally { btn.disabled = false; }
     });
 
-    loadPapers();
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { window.location.href = "/login.html"; return; }
+      document.getElementById("app").style.display = "block";
+      loadPapers();
+    })();
   </script>
 </body>
 </html>
