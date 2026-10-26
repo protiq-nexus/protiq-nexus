@@ -5,91 +5,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login | ProtiQ Nexus</title>
   <style>
-    :root {
-      --bg: #080d19; --panel: #101a2b; --text: #f2f6ff; --muted: #a1b0c8;
-      --cyan: #54ead5; --border: #24334a;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; background: var(--bg); color: var(--text);
-      font-family: Inter, Arial, sans-serif; min-height: 100vh;
-      display: flex; flex-direction: column;
-    }
-    a { color: var(--cyan); text-decoration: none; }
-    button, input { font: inherit; }
-    header { border-bottom: 1px solid var(--border); }
-    nav {
-      max-width: 1100px; margin: auto; padding: 14px 20px;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .logo { font-size: 20px; font-weight: 800; color: var(--text); }
-    .logo span { color: var(--cyan); }
-    main { flex: 1; display: grid; place-items: center; padding: 40px 16px; }
-    .card {
-      width: 100%; max-width: 420px; background: var(--panel);
-      border: 1px solid var(--border); border-radius: 16px; padding: 28px;
-    }
-    h1 { margin: 0 0 8px; font-size: 26px; }
-    .sub { color: var(--muted); font-size: 14px; margin-bottom: 22px; }
-    .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
-    .tab {
-      flex: 1; padding: 10px; border-radius: 9px; border: 1px solid var(--border);
-      background: transparent; color: var(--muted); cursor: pointer;
-    }
-    .tab.active {
-      border-color: var(--cyan); color: var(--cyan);
-      background: rgba(84,234,213,.08);
-    }
-    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-    input {
-      width: 100%; padding: 12px; margin-bottom: 14px;
-      border: 1px solid var(--border); border-radius: 9px;
-      background: #0a1120; color: var(--text);
-    }
-    .btn {
-      width: 100%; padding: 12px; border: 0; border-radius: 9px; cursor: pointer;
-      background: linear-gradient(100deg, #347cf0, #24b8b0);
-      color: #06101b; font-weight: 800;
-    }
-    .msg { margin-top: 14px; font-size: 14px; color: var(--cyan); min-height: 20px; }
-    .msg.error { color: #ff6b6b; }
-    .form { display: none; }
-    .form.active { display: block; }
+    body { margin:0; background:#080d19; color:#f2f6ff; font-family:Arial,sans-serif; min-height:100vh; display:flex; flex-direction:column; }
+    a { color:#54ead5; text-decoration:none; }
+    header { border-bottom:1px solid #24334a; padding:14px 20px; }
+    main { flex:1; display:grid; place-items:center; padding:40px 16px; }
+    .card { width:100%; max-width:420px; background:#101a2b; border:1px solid #24334a; border-radius:16px; padding:28px; }
+    h1 { margin:0 0 8px; }
+    .sub { color:#a1b0c8; font-size:14px; margin-bottom:20px; }
+    .tabs { display:flex; gap:8px; margin-bottom:16px; }
+    .tab { flex:1; padding:10px; border-radius:9px; border:1px solid #24334a; background:transparent; color:#a1b0c8; cursor:pointer; }
+    .tab.on { border-color:#54ead5; color:#54ead5; }
+    label { display:block; font-size:13px; color:#a1b0c8; margin:0 0 6px; }
+    input { width:100%; padding:12px; margin-bottom:12px; border:1px solid #24334a; border-radius:9px; background:#0a1120; color:#fff; box-sizing:border-box; }
+    .btn { width:100%; padding:12px; border:0; border-radius:9px; cursor:pointer; background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b; font-weight:800; }
+    .msg { margin-top:14px; font-size:14px; color:#54ead5; white-space:pre-wrap; }
+    .err { color:#ff6b6b; }
+    .box { display:none; }
+    .box.on { display:block; }
   </style>
 </head>
 <body>
-  <header>
-    <nav>
-      <a class="logo" href="/">ProtiQ<span> Labs</span></a>
-      <a href="/" style="color:#a1b0c8;font-size:13px;">← Home</a>
-    </nav>
-  </header>
-
+  <header><a href="/">ProtiQ Labs</a></header>
   <main>
     <div class="card">
       <h1>Welcome</h1>
-      <p class="sub">Sign in free to use Olympiad, Research and AI.</p>
-
+      <p class="sub">Sign up or login to continue</p>
       <div class="tabs">
-        <button type="button" class="tab active" id="tabLogin">Login</button>
-        <button type="button" class="tab" id="tabSignup">Sign up</button>
+        <button class="tab on" id="bLogin" type="button">Login</button>
+        <button class="tab" id="bSignup" type="button">Sign up</button>
       </div>
 
-      <form id="loginForm" class="form active">
+      <div class="box on" id="loginBox">
         <label>Email</label>
-        <input type="email" id="loginEmail" required placeholder="you@email.com">
+        <input id="loginEmail" type="email" placeholder="you@email.com">
         <label>Password</label>
-        <input type="password" id="loginPassword" required minlength="6" placeholder="••••••••">
-        <button class="btn" type="submit">Login</button>
-      </form>
+        <input id="loginPassword" type="password" placeholder="min 6 chars">
+        <button class="btn" type="button" id="loginBtn">Login</button>
+      </div>
 
-      <form id="signupForm" class="form">
+      <div class="box" id="signupBox">
         <label>Email</label>
-        <input type="email" id="signupEmail" required placeholder="you@email.com">
+        <input id="signupEmail" type="email" placeholder="you@email.com">
         <label>Password</label>
-        <input type="password" id="signupPassword" required minlength="6" placeholder="At least 6 characters">
-        <button class="btn" type="submit">Create account</button>
-      </form>
+        <input id="signupPassword" type="password" placeholder="min 6 chars">
+        <button class="btn" type="button" id="signupBtn">Create account</button>
+      </div>
 
       <div class="msg" id="msg"></div>
     </div>
@@ -97,59 +57,69 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const SUPABASE_URL = "https://dylkrvdnyefdeuxtchji.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const msg = document.getElementById("msg");
+    function show(t, isErr) {
+      msg.textContent = t;
+      msg.className = isErr ? "msg err" : "msg";
+    }
 
-    document.getElementById("tabLogin").onclick = function () {
-      document.getElementById("tabLogin").classList.add("active");
-      document.getElementById("tabSignup").classList.remove("active");
-      document.getElementById("loginForm").classList.add("active");
-      document.getElementById("signupForm").classList.remove("active");
-      msg.textContent = "";
-      msg.className = "msg";
+    document.getElementById("bLogin").onclick = function () {
+      document.getElementById("bLogin").classList.add("on");
+      document.getElementById("bSignup").classList.remove("on");
+      document.getElementById("loginBox").classList.add("on");
+      document.getElementById("signupBox").classList.remove("on");
+      show("");
+    };
+    document.getElementById("bSignup").onclick = function () {
+      document.getElementById("bSignup").classList.add("on");
+      document.getElementById("bLogin").classList.remove("on");
+      document.getElementById("signupBox").classList.add("on");
+      document.getElementById("loginBox").classList.remove("on");
+      show("");
     };
 
-    document.getElementById("tabSignup").onclick = function () {
-      document.getElementById("tabSignup").classList.add("active");
-      document.getElementById("tabLogin").classList.remove("active");
-      document.getElementById("signupForm").classList.add("active");
-      document.getElementById("loginForm").classList.remove("active");
-      msg.textContent = "";
-      msg.className = "msg";
-    };
+    let supabase = null;
+    try {
+      if (!window.supabase) throw new Error("Supabase library failed to load");
+      supabase = window.supabase.createClient(
+        "https://dylkrvdnyefdeuxtchji.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
+      );
+      show("Ready. Choose Login or Sign up.");
+    } catch (e) {
+      show("Setup error: " + e.message, true);
+    }
 
-    document.getElementById("loginForm").onsubmit = async function (e) {
-      e.preventDefault();
-      msg.className = "msg";
-      msg.textContent = "Signing in...";
-      const email = document.getElementById("loginEmail").value.trim();
-      const password = document.getElementById("loginPassword").value;
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        msg.className = "msg error";
-        msg.textContent = error.message;
-        return;
+    document.getElementById("signupBtn").onclick = async function () {
+      try {
+        if (!supabase) throw new Error("Supabase not ready");
+        const email = document.getElementById("signupEmail").value.trim();
+        const password = document.getElementById("signupPassword").value;
+        if (!email || password.length < 6) throw new Error("Email required & password min 6 chars");
+        show("Creating account...");
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        show("Account created! Now go to Login tab and sign in.");
+        document.getElementById("bLogin").click();
+      } catch (e) {
+        show("Sign up failed: " + (e.message || e), true);
       }
-      msg.textContent = "Success! Redirecting...";
-      window.location.href = "/profile.html";
     };
 
-    document.getElementById("signupForm").onsubmit = async function (e) {
-      e.preventDefault();
-      msg.className = "msg";
-      msg.textContent = "Creating account...";
-      const email = document.getElementById("signupEmail").value.trim();
-      const password = document.getElementById("signupPassword").value;
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        msg.className = "msg error";
-        msg.textContent = error.message;
-        return;
+    document.getElementById("loginBtn").onclick = async function () {
+      try {
+        if (!supabase) throw new Error("Supabase not ready");
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
+        if (!email || !password) throw new Error("Enter email and password");
+        show("Signing in...");
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        show("Success! Going to profile...");
+        window.location.href = "/profile.html";
+      } catch (e) {
+        show("Login failed: " + (e.message || e), true);
       }
-      msg.textContent = "Account created! Now login.";
-      document.getElementById("tabLogin").click();
     };
   </script>
 </body>
