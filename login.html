@@ -5,127 +5,121 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login | ProtiQ Nexus</title>
   <style>
-    body { margin:0; background:#080d19; color:#f2f6ff; font-family:Arial,sans-serif; min-height:100vh; }
+    body { margin:0; background:#080d19; color:#f2f6ff; font-family:Arial,sans-serif; }
     a { color:#54ead5; text-decoration:none; }
-    header { border-bottom:1px solid #24334a; padding:14px 20px; }
+    header { padding:14px 20px; border-bottom:1px solid #24334a; }
     main { max-width:420px; margin:40px auto; padding:0 16px; }
     .card { background:#101a2b; border:1px solid #24334a; border-radius:16px; padding:28px; }
-    h1 { margin:0 0 6px; font-size:26px; }
-    .sub { color:#a1b0c8; font-size:14px; margin:0 0 18px; }
-    .tabs { display:flex; gap:8px; margin-bottom:18px; }
-    .tab {
-      flex:1; padding:10px; border-radius:9px; border:1px solid #24334a;
-      background:transparent; color:#a1b0c8; cursor:pointer; font-size:14px;
-    }
-    .tab.active { border-color:#54ead5; color:#54ead5; background:rgba(84,234,213,.1); }
-    label { display:block; font-size:13px; color:#a1b0c8; margin:0 0 6px; }
-    input {
-      width:100%; padding:12px; margin:0 0 12px; border:1px solid #24334a;
-      border-radius:9px; background:#0a1120; color:#fff; box-sizing:border-box;
-    }
-    .btn {
-      width:100%; padding:12px; border:0; border-radius:9px; cursor:pointer;
-      background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b; font-weight:800;
-    }
-    .msg { margin-top:14px; font-size:14px; color:#54ead5; }
-    .msg.err { color:#ff6b6b; }
-    #signupSection { display:none; }
+    h1 { margin:0 0 6px; }
+    .sub { color:#a1b0c8; font-size:14px; margin:0 0 16px; }
+    .tabs { display:flex; gap:8px; margin-bottom:16px; }
+    .tab { flex:1; padding:10px; border-radius:9px; border:1px solid #24334a; background:transparent; color:#a1b0c8; cursor:pointer; }
+    .tab.active { border-color:#54ead5; color:#54ead5; }
+    label { display:block; font-size:13px; color:#a1b0c8; margin-bottom:6px; }
+    input { width:100%; box-sizing:border-box; padding:12px; margin-bottom:12px; border:1px solid #24334a; border-radius:9px; background:#0a1120; color:#fff; }
+    .btn { width:100%; padding:12px; border:0; border-radius:9px; cursor:pointer; background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b; font-weight:800; }
+    #msg { margin-top:14px; font-size:14px; color:#54ead5; }
+    .err { color:#ff6b6b !important; }
   </style>
 </head>
 <body>
-  <header><a href="/">← ProtiQ Labs</a></header>
+  <header><a href="/">← Home</a></header>
   <main>
     <div class="card">
       <h1 id="title">Login</h1>
-      <p class="sub" id="subtitle">Already have an account? Sign in below.</p>
+      <p class="sub" id="sub">Account thakle login koro</p>
 
       <div class="tabs">
-        <button type="button" class="tab active" id="btnLogin">Login</button>
-        <button type="button" class="tab" id="btnSignup">Sign up</button>
+        <button type="button" class="tab active" id="tabL" onclick="showLogin()">Login</button>
+        <button type="button" class="tab" id="tabS" onclick="showSignup()">Sign up</button>
       </div>
 
-      <div id="loginSection">
+      <div id="loginBox">
         <label>Email</label>
-        <input id="loginEmail" type="email" placeholder="you@email.com">
+        <input id="le" type="email" placeholder="you@email.com">
         <label>Password</label>
-        <input id="loginPassword" type="password" placeholder="Your password">
-        <button type="button" class="btn" id="doLogin">Login now</button>
+        <input id="lp" type="password" placeholder="password">
+        <button type="button" class="btn" onclick="doLogin()">Login now</button>
       </div>
 
-      <div id="signupSection">
+      <div id="signupBox" style="display:none">
         <label>Email</label>
-        <input id="signupEmail" type="email" placeholder="new@email.com">
-        <label>Password (min 6 characters)</label>
-        <input id="signupPassword" type="password" placeholder="Create password">
-        <button type="button" class="btn" id="doSignup">Create new account</button>
+        <input id="se" type="email" placeholder="new@email.com">
+        <label>Password (min 6)</label>
+        <input id="sp" type="password" placeholder="new password">
+        <button type="button" class="btn" onclick="doSignup()">Create account</button>
       </div>
 
-      <div class="msg" id="msg"></div>
+      <div id="msg"></div>
     </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const msg = document.getElementById("msg");
-    function setMsg(t, err) {
-      msg.textContent = t || "";
-      msg.className = err ? "msg err" : "msg";
+    function showLogin() {
+      document.getElementById("loginBox").style.display = "block";
+      document.getElementById("signupBox").style.display = "none";
+      document.getElementById("tabL").classList.add("active");
+      document.getElementById("tabS").classList.remove("active");
+      document.getElementById("title").innerText = "Login";
+      document.getElementById("sub").innerText = "Account thakle login koro";
+      document.getElementById("msg").innerText = "";
     }
 
-    document.getElementById("btnLogin").onclick = function () {
-      document.getElementById("btnLogin").classList.add("active");
-      document.getElementById("btnSignup").classList.remove("active");
-      document.getElementById("loginSection").style.display = "block";
-      document.getElementById("signupSection").style.display = "none";
-      document.getElementById("title").textContent = "Login";
-      document.getElementById("subtitle").textContent = "Already have an account? Sign in below.";
-      setMsg("");
-    };
+    function showSignup() {
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("signupBox").style.display = "block";
+      document.getElementById("tabS").classList.add("active");
+      document.getElementById("tabL").classList.remove("active");
+      document.getElementById("title").innerText = "Sign up";
+      document.getElementById("sub").innerText = "Notun account banao";
+      document.getElementById("msg").innerText = "Signup form open";
+      document.getElementById("msg").className = "";
+    }
 
-    document.getElementById("btnSignup").onclick = function () {
-      document.getElementById("btnSignup").classList.add("active");
-      document.getElementById("btnLogin").classList.remove("active");
-      document.getElementById("loginSection").style.display = "none";
-      document.getElementById("signupSection").style.display = "block";
-      document.getElementById("title").textContent = "Sign up";
-      document.getElementById("subtitle").textContent = "Create a free account to use all features.";
-      setMsg("Sign up form is open. Fill email & password.");
-    };
+    function getSB() {
+      return window.supabase.createClient(
+        "https://dylkrvdnyefdeuxtchji.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
+      );
+    }
 
-    const supabase = window.supabase.createClient(
-      "https://dylkrvdnyefdeuxtchji.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
-    );
-
-    document.getElementById("doSignup").onclick = async function () {
+    async function doSignup() {
+      var msg = document.getElementById("msg");
       try {
-        const email = document.getElementById("signupEmail").value.trim();
-        const password = document.getElementById("signupPassword").value;
-        if (!email) return setMsg("Email likho", true);
-        if (password.length < 6) return setMsg("Password minimum 6 character", true);
-        setMsg("Creating account...");
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) return setMsg(error.message, true);
-        setMsg("Account created! Now click Login tab and sign in.");
+        var email = document.getElementById("se").value.trim();
+        var password = document.getElementById("sp").value;
+        if (!email) { msg.innerText = "Email dao"; msg.className = "err"; return; }
+        if (password.length < 6) { msg.innerText = "Password min 6"; msg.className = "err"; return; }
+        msg.className = "";
+        msg.innerText = "Creating...";
+        var { error } = await getSB().auth.signUp({ email: email, password: password });
+        if (error) { msg.innerText = error.message; msg.className = "err"; return; }
+        msg.innerText = "Account created! Login tab e giye sign in koro.";
+        showLogin();
       } catch (e) {
-        setMsg(String(e.message || e), true);
+        msg.innerText = String(e.message || e);
+        msg.className = "err";
       }
-    };
+    }
 
-    document.getElementById("doLogin").onclick = async function () {
+    async function doLogin() {
+      var msg = document.getElementById("msg");
       try {
-        const email = document.getElementById("loginEmail").value.trim();
-        const password = document.getElementById("loginPassword").value;
-        if (!email || !password) return setMsg("Email & password dao", true);
-        setMsg("Signing in...");
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) return setMsg(error.message, true);
-        setMsg("Success! Redirecting...");
+        var email = document.getElementById("le").value.trim();
+        var password = document.getElementById("lp").value;
+        if (!email || !password) { msg.innerText = "Email & password dao"; msg.className = "err"; return; }
+        msg.className = "";
+        msg.innerText = "Signing in...";
+        var { error } = await getSB().auth.signInWithPassword({ email: email, password: password });
+        if (error) { msg.innerText = error.message; msg.className = "err"; return; }
+        msg.innerText = "Success!";
         window.location.href = "/profile.html";
       } catch (e) {
-        setMsg(String(e.message || e), true);
+        msg.innerText = String(e.message || e);
+        msg.className = "err";
       }
-    };
+    }
   </script>
 </body>
 </html>
