@@ -3,34 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Assistant | ProtiQ Nexus</title>
+  <title>AI | ProtiQ Nexus</title>
   <style>
-    :root {
-      --bg: #080d19; --panel: #101a2b; --text: #f2f6ff; --muted: #a1b0c8;
-      --blue: #65aaff; --cyan: #54ead5; --border: #24334a;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, Arial, sans-serif; line-height: 1.65; min-height: 100vh; }
-    a { color: inherit; text-decoration: none; }
-    button, input { font: inherit; }
-    header { border-bottom: 1px solid var(--border); background: rgba(8,13,25,.95); }
-    nav { max-width: 1100px; margin: auto; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-    .logo { font-size: 20px; font-weight: 800; }
-    .logo span { color: var(--cyan); }
-    .navlinks { display: flex; gap: 18px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
-    .navlinks a:hover, .navlinks a.active { color: var(--cyan); }
-    .wrap { max-width: 800px; margin: auto; padding: 40px 20px 60px; }
-    .eyebrow { color: var(--cyan); font-size: 12px; letter-spacing: 3px; font-weight: 700; text-transform: uppercase; }
-    h1 { font-size: clamp(28px, 4vw, 40px); margin: 8px 0 10px; }
-    .intro { color: var(--muted); margin-bottom: 28px; }
-    .box { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
-    .searchbar { display: flex; gap: 10px; margin-bottom: 16px; }
-    .searchbar input { flex: 1; min-width: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 9px; background: #0a1120; color: var(--text); }
-    .btn { padding: 12px 18px; border: 0; border-radius: 9px; cursor: pointer; background: linear-gradient(100deg, #347cf0, #24b8b0); color: #06101b; font-weight: 800; }
-    #answer { font-size: 14px; line-height: 1.75; color: var(--muted); }
-    #answer p { margin: 0 0 12px; }
-    #answer strong { color: var(--cyan); }
-    footer { border-top: 1px solid var(--border); padding: 18px; text-align: center; color: var(--muted); font-size: 12px; }
+    body { margin:0; background:#080d19; color:#f2f6ff; font-family:Arial,sans-serif; }
+    a { color:inherit; text-decoration:none; }
+    header { border-bottom:1px solid #24334a; }
+    nav { max-width:1100px; margin:auto; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; }
+    .logo { font-weight:800; } .logo span { color:#54ead5; }
+    .navlinks a { color:#a1b0c8; margin-left:14px; font-size:13px; }
+    .navlinks a.active { color:#54ead5; }
+    .wrap { max-width:800px; margin:auto; padding:40px 20px; }
+    .box { background:#101a2b; border:1px solid #24334a; border-radius:16px; padding:24px; }
+    .row { display:flex; gap:10px; margin-bottom:16px; }
+    input { flex:1; padding:12px; border:1px solid #24334a; border-radius:9px; background:#0a1120; color:#fff; }
+    .btn { padding:12px 18px; border:0; border-radius:9px; cursor:pointer; background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b; font-weight:800; }
+    #answer { color:#a1b0c8; font-size:14px; line-height:1.7; }
+    #answer strong { color:#54ead5; }
+    #info { color:#a1b0c8; margin-bottom:16px; }
   </style>
 </head>
 <body>
@@ -47,64 +36,75 @@
     </nav>
   </header>
 
-  <div class="wrap" id="app" style="display:none">
-    <div class="eyebrow">Assistant</div>
-    <h1>Physics AI</h1>
-    <p class="intro">Ask any physics question and get a clear explanation.</p>
-    <div class="box">
-      <div class="searchbar">
-        <input id="question" type="text" placeholder="e.g. What is viscosity?">
-        <button class="btn" onclick="askAI()">Ask</button>
+  <div class="wrap">
+    <div id="info">Checking login...</div>
+    <div id="app" style="display:none">
+      <h1>Physics AI</h1>
+      <p style="color:#a1b0c8">Ask any physics question.</p>
+      <div class="box">
+        <div class="row">
+          <input id="q" type="text" placeholder="e.g. What is viscosity?">
+          <button class="btn" onclick="ask()">Ask</button>
+        </div>
+        <div id="answer"></div>
       </div>
-      <div id="answer"></div>
     </div>
   </div>
-  <footer>© <span id="year"></span> ProtiQ Labs</footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
-    const SUPABASE_URL = "https://dylkrvdnyefdeuxtchji.supabase.co";
-   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const info = document.getElementById("info");
+    const sb = window.supabase.createClient(
+      "https://dylkrvdnyefdeuxtchji.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
+    );
 
-    function formatAIAnswer(text) {
+    function formatAI(text) {
       if (!text) return "";
-      let t = String(text);
+      var t = String(text);
       t = t.replace(/^#{1,6}\s+/gm, "");
-      t = t.replace(/\*\*\*(.*?)\*\*\*/g, "<strong>$1</strong>");
       t = t.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
       t = t.replace(/\*(.*?)\*/g, "$1");
-      t = t.replace(/`{1,3}([^`]+)`{1,3}/g, "$1");
-      const parts = t.split(/\n+/).map(p => p.trim()).filter(Boolean);
-      return parts.map(p => `<p>${p}</p>`).join("");
+      return t.split(/\n+/).filter(Boolean).map(function(p){ return "<p>"+p+"</p>"; }).join("");
     }
 
-    async function askAI() {
-      const q = document.getElementById("question").value.trim();
-      const box = document.getElementById("answer");
-      if (!q) { box.innerHTML = "<p>Enter a physics question.</p>"; return; }
+    async function ask() {
+      var q = document.getElementById("q").value.trim();
+      var box = document.getElementById("answer");
+      if (!q) { box.innerHTML = "<p>Question likho</p>"; return; }
       box.innerHTML = "<p>Thinking...</p>";
       try {
-        const res = await fetch("/api/chat", {
+        var res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: [{ role: "user", content: q }] })
         });
-        const data = await res.json();
+        var data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed");
-        box.innerHTML = formatAIAnswer(data.answer);
-      } catch {
-        box.innerHTML = "<p>Unable to get an answer. Please try again.</p>";
+        box.innerHTML = formatAI(data.answer);
+      } catch (e) {
+        box.innerHTML = "<p>Error: " + (e.message || e) + "</p>";
       }
     }
 
-    document.getElementById("question").addEventListener("keydown", e => { if (e.key === "Enter") askAI(); });
+    document.getElementById("q").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") ask();
+    });
 
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { window.location.href = "/login.html"; return; }
-      document.getElementById("app").style.display = "block";
+    (async function () {
+      try {
+        var { data: { session }, error } = await sb.auth.getSession();
+        if (error) { info.textContent = "Auth error: " + error.message; return; }
+        if (!session) {
+          info.textContent = "Not logged in. Redirecting...";
+          window.location.href = "/login.html";
+          return;
+        }
+        info.style.display = "none";
+        document.getElementById("app").style.display = "block";
+      } catch (e) {
+        info.textContent = "Error: " + (e.message || e);
+      }
     })();
   </script>
 </body>
