@@ -7,7 +7,7 @@
   <style>
     :root {
       --bg: #080d19; --panel: #101a2b; --text: #f2f6ff; --muted: #a1b0c8;
-      --blue: #65aaff; --cyan: #54ead5; --border: #24334a;
+      --cyan: #54ead5; --border: #24334a;
     }
     * { box-sizing: border-box; }
     body {
@@ -17,7 +17,6 @@
     }
     a { color: var(--cyan); text-decoration: none; }
     button, input { font: inherit; }
-
     header { border-bottom: 1px solid var(--border); }
     nav {
       max-width: 1100px; margin: auto; padding: 14px 20px;
@@ -25,10 +24,7 @@
     }
     .logo { font-size: 20px; font-weight: 800; color: var(--text); }
     .logo span { color: var(--cyan); }
-
-    main {
-      flex: 1; display: grid; place-items: center; padding: 40px 16px;
-    }
+    main { flex: 1; display: grid; place-items: center; padding: 40px 16px; }
     .card {
       width: 100%; max-width: 420px; background: var(--panel);
       border: 1px solid var(--border); border-radius: 16px; padding: 28px;
@@ -53,9 +49,8 @@
     .btn {
       width: 100%; padding: 12px; border: 0; border-radius: 9px; cursor: pointer;
       background: linear-gradient(100deg, #347cf0, #24b8b0);
-      color: #06101b; font-weight: 800; margin-top: 4px;
+      color: #06101b; font-weight: 800;
     }
-    .btn:disabled { opacity: .6; cursor: not-allowed; }
     .msg { margin-top: 14px; font-size: 14px; color: var(--cyan); min-height: 20px; }
     .msg.error { color: #ff6b6b; }
     .form { display: none; }
@@ -73,11 +68,11 @@
   <main>
     <div class="card">
       <h1>Welcome</h1>
-      <p class="sub">Sign in free to use Olympiad, Research and AI tools.</p>
+      <p class="sub">Sign in free to use Olympiad, Research and AI.</p>
 
       <div class="tabs">
-        <button class="tab active" data-mode="login">Login</button>
-        <button class="tab" data-mode="signup">Sign up</button>
+        <button type="button" class="tab active" id="tabLogin">Login</button>
+        <button type="button" class="tab" id="tabSignup">Sign up</button>
       </div>
 
       <form id="loginForm" class="form active">
@@ -105,28 +100,33 @@
     const SUPABASE_URL = "https://dylkrvdnyefdeuxtchji.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     const msg = document.getElementById("msg");
 
-    document.querySelectorAll(".tab").forEach(tab => {
-      tab.addEventListener("click", () => {
-        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-        document.querySelectorAll(".form").forEach(f => f.classList.remove("active"));
-        tab.classList.add("active");
-        document.getElementById(tab.dataset.mode + "Form").classList.add("active");
-        msg.textContent = "";
-        msg.className = "msg";
-      });
-    });
+    document.getElementById("tabLogin").onclick = function () {
+      document.getElementById("tabLogin").classList.add("active");
+      document.getElementById("tabSignup").classList.remove("active");
+      document.getElementById("loginForm").classList.add("active");
+      document.getElementById("signupForm").classList.remove("active");
+      msg.textContent = "";
+      msg.className = "msg";
+    };
 
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    document.getElementById("tabSignup").onclick = function () {
+      document.getElementById("tabSignup").classList.add("active");
+      document.getElementById("tabLogin").classList.remove("active");
+      document.getElementById("signupForm").classList.add("active");
+      document.getElementById("loginForm").classList.remove("active");
+      msg.textContent = "";
+      msg.className = "msg";
+    };
+
+    document.getElementById("loginForm").onsubmit = async function (e) {
       e.preventDefault();
       msg.className = "msg";
       msg.textContent = "Signing in...";
       const email = document.getElementById("loginEmail").value.trim();
       const password = document.getElementById("loginPassword").value;
-
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         msg.className = "msg error";
         msg.textContent = error.message;
@@ -134,29 +134,23 @@
       }
       msg.textContent = "Success! Redirecting...";
       window.location.href = "/profile.html";
-    });
+    };
 
-    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+    document.getElementById("signupForm").onsubmit = async function (e) {
       e.preventDefault();
       msg.className = "msg";
       msg.textContent = "Creating account...";
       const email = document.getElementById("signupEmail").value.trim();
       const password = document.getElementById("signupPassword").value;
-
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({ email, password });
       if (error) {
         msg.className = "msg error";
         msg.textContent = error.message;
         return;
       }
-      msg.textContent = "Account created! You can login now.";
-      document.querySelector('[data-mode="login"]').click();
-    });
-
-    // already logged in?
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) window.location.href = "/profile.html";
-    });
+      msg.textContent = "Account created! Now login.";
+      document.getElementById("tabLogin").click();
+    };
   </script>
 </body>
 </html>
