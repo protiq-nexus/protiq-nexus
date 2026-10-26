@@ -5,68 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profile | ProtiQ Nexus</title>
   <style>
-    :root {
-      --bg: #080d19; --panel: #101a2b; --text: #f2f6ff; --muted: #a1b0c8;
-      --blue: #65aaff; --cyan: #54ead5; --border: #24334a;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; background: var(--bg); color: var(--text);
-      font-family: Inter, Arial, sans-serif; line-height: 1.65; min-height: 100vh;
-    }
-    a { color: inherit; text-decoration: none; }
-    button { font: inherit; cursor: pointer; }
-
-    header { border-bottom: 1px solid var(--border); background: rgba(8,13,25,.95); }
-    nav {
-      max-width: 1100px; margin: auto; padding: 14px 20px;
-      display: flex; justify-content: space-between; align-items: center; gap: 16px;
-    }
-    .logo { font-size: 20px; font-weight: 800; }
-    .logo span { color: var(--cyan); }
-    .navlinks { display: flex; gap: 18px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
-    .navlinks a:hover, .navlinks a.active { color: var(--cyan); }
-
-    .wrap { max-width: 700px; margin: auto; padding: 40px 20px 60px; }
-    .eyebrow {
-      color: var(--cyan); font-size: 12px; letter-spacing: 3px;
-      font-weight: 700; text-transform: uppercase;
-    }
-    h1 { font-size: clamp(28px, 4vw, 40px); margin: 8px 0 10px; letter-spacing: -1px; }
-    .intro { color: var(--muted); margin-bottom: 28px; }
-
-    .card {
-      background: var(--panel); border: 1px solid var(--border);
-      border-radius: 16px; padding: 28px; text-align: center;
-    }
-    .avatar {
-      width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 16px;
-      background: linear-gradient(135deg, #347cf0, #24b8b0);
-      display: grid; place-items: center; font-size: 28px; font-weight: 800;
-      color: #06101b;
-    }
-    .card h2 { margin: 0 0 6px; }
-    .card p { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
-    .badge {
-      display: inline-block; padding: 6px 12px; border-radius: 999px;
-      border: 1px solid var(--border); color: var(--cyan); font-size: 12px;
-    }
-    .actions { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-    .btn {
-      padding: 10px 16px; border-radius: 9px; border: 1px solid var(--border);
-      background: transparent; color: var(--text);
-    }
-    .btn.primary {
-      border: 0;
-      background: linear-gradient(100deg, #347cf0, #24b8b0);
-      color: #06101b; font-weight: 800;
-    }
-    .hidden { display: none !important; }
-
-    footer {
-      border-top: 1px solid var(--border); padding: 18px; text-align: center;
-      color: var(--muted); font-size: 12px;
-    }
+    body { margin:0; background:#080d19; color:#f2f6ff; font-family:Arial,sans-serif; }
+    a { color:inherit; text-decoration:none; }
+    header { border-bottom:1px solid #24334a; }
+    nav { max-width:1100px; margin:auto; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; }
+    .logo { font-weight:800; } .logo span { color:#54ead5; }
+    .navlinks a { color:#a1b0c8; margin-left:14px; font-size:13px; }
+    .navlinks a.active { color:#54ead5; }
+    .wrap { max-width:700px; margin:auto; padding:40px 20px; }
+    .card { background:#101a2b; border:1px solid #24334a; border-radius:16px; padding:28px; text-align:center; }
+    .avatar { width:72px; height:72px; border-radius:50%; margin:0 auto 16px; background:linear-gradient(135deg,#347cf0,#24b8b0); display:grid; place-items:center; font-size:28px; font-weight:800; color:#06101b; }
+    .btn { display:inline-block; margin-top:14px; padding:10px 16px; border-radius:9px; border:0; cursor:pointer; background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b; font-weight:800; }
+    .btn2 { background:transparent; border:1px solid #24334a; color:#f2f6ff; }
+    #status { color:#a1b0c8; font-size:14px; margin-top:10px; }
   </style>
 </head>
 <body>
@@ -84,67 +35,58 @@
   </header>
 
   <div class="wrap">
-    <div class="eyebrow">Account</div>
     <h1>Profile</h1>
-    <p class="intro">Your account on ProtiQ Nexus.</p>
-
-    <div class="card" id="guestCard">
-      <div class="avatar">?</div>
-      <h2>Guest</h2>
-      <p>Sign in free to save progress and upload research.</p>
-      <span class="badge">Not logged in</span>
-      <div class="actions">
-        <a class="btn primary" href="/login.html">Login / Sign up</a>
-      </div>
-    </div>
-
-    <div class="card hidden" id="userCard">
-      <div class="avatar" id="avatarLetter">U</div>
-      <h2 id="userTitle">User</h2>
-      <p id="userEmail"></p>
-      <span class="badge">Free plan · Active</span>
-      <div class="actions">
-        <button class="btn" id="logoutBtn">Logout</button>
-      </div>
+    <div class="card">
+      <div class="avatar" id="av">?</div>
+      <h2 id="name">Checking...</h2>
+      <p id="email" style="color:#a1b0c8"></p>
+      <div id="status">Loading session...</div>
+      <div id="actions"></div>
     </div>
   </div>
 
-  <footer>© <span id="year"></span> ProtiQ Labs · ProtiQ Nexus</footer>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
+    const sb = window.supabase.createClient(
+      "https://dylkrvdnyefdeuxtchji.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
+    );
 
-    const SUPABASE_URL = "https://dylkrvdnyefdeuxtchji.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    async function load() {
+      const { data: { session }, error } = await sb.auth.getSession();
+      const name = document.getElementById("name");
+      const email = document.getElementById("email");
+      const status = document.getElementById("status");
+      const actions = document.getElementById("actions");
+      const av = document.getElementById("av");
 
-    async function loadUser() {
-      const { data: { session } } = await supabase.auth.getSession();
-      const guestCard = document.getElementById("guestCard");
-      const userCard = document.getElementById("userCard");
-
-      if (!session) {
-        guestCard.classList.remove("hidden");
-        userCard.classList.add("hidden");
+      if (error) {
+        status.textContent = "Error: " + error.message;
         return;
       }
 
-      const email = session.user.email || "User";
-      const letter = email.charAt(0).toUpperCase();
-      document.getElementById("avatarLetter").textContent = letter;
-      document.getElementById("userTitle").textContent = email.split("@")[0];
-      document.getElementById("userEmail").textContent = email;
-      guestCard.classList.add("hidden");
-      userCard.classList.remove("hidden");
+      if (!session) {
+        name.textContent = "Guest";
+        email.textContent = "";
+        status.textContent = "Not logged in";
+        av.textContent = "?";
+        actions.innerHTML = '<a class="btn" href="/login.html">Login / Sign up</a>';
+        return;
+      }
+
+      const em = session.user.email || "User";
+      name.textContent = em.split("@")[0];
+      email.textContent = em;
+      status.textContent = "Logged in · Free plan";
+      av.textContent = em.charAt(0).toUpperCase();
+      actions.innerHTML = '<button class="btn btn2" id="out">Logout</button>';
+      document.getElementById("out").onclick = async function () {
+        await sb.auth.signOut();
+        window.location.href = "/login.html";
+      };
     }
 
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
-      await supabase.auth.signOut();
-      window.location.href = "/login.html";
-    });
-
-    loadUser();
+    load();
   </script>
 </body>
 </html>
