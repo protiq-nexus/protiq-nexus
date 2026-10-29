@@ -17,6 +17,100 @@ function pointsForPart(part, correct) {
   return pts;
 }
 
+function makeHint(q) {
+  const topic = String(q.topic || "");
+  const level = String(q.level || "");
+  const question = String(q.question || "").toLowerCase();
+
+  if (question.includes("unit") || question.includes("si unit")) {
+    return "Recall the standard SI unit and what physical quantity it measures.";
+  }
+  if (question.includes("dimension") || question.includes("dimensionless")) {
+    return "Check whether the quantity has units or is a pure number ratio.";
+  }
+
+  if (topic === "Mechanics") {
+    if (question.includes("energy") || question.includes("work") || question.includes("power")) {
+      return "Relate work, energy and power: W=Fs, KE=½mv², P=W/t.";
+    }
+    if (question.includes("momentum") || question.includes("impulse") || question.includes("collision")) {
+      return "Use momentum p=mv and impulse = change in momentum.";
+    }
+    if (question.includes("circular") || question.includes("centripetal")) {
+      return "Centripetal acceleration is v²/r toward the centre.";
+    }
+    if (question.includes("shm") || question.includes("harmonic") || question.includes("pendulum")) {
+      return "For small angles a simple pendulum is approximately SHM.";
+    }
+    if (question.includes("gravity") || question.includes("satellite") || question.includes("escape")) {
+      return "Think Newton gravity: F=GMm/r² and orbital/escape speed formulas.";
+    }
+    return "Identify the law (Newton, energy, rotation) before picking an option.";
+  }
+
+  if (topic === "Electricity") {
+    if (question.includes("ohm") || question.includes("resistance") || question.includes("current")) {
+      return "Start from Ohm’s law V=IR and series/parallel rules.";
+    }
+    if (question.includes("capacitor") || question.includes("capacitance")) {
+      return "C=Q/V and energy ½CV²; series/parallel for networks.";
+    }
+    if (question.includes("magnetic") || question.includes("induced") || question.includes("faraday")) {
+      return "Use Faraday/Lenz: induced emf opposes change in flux.";
+    }
+    return "Write the basic circuit or field formula first, then eliminate options.";
+  }
+
+  if (topic === "Optics") {
+    if (question.includes("mirror") || question.includes("lens") || question.includes("focal")) {
+      return "Use sign convention with mirror/lens formula carefully.";
+    }
+    if (question.includes("interference") || question.includes("diffraction") || question.includes("young")) {
+      return "Path difference decides bright/dark; fringe width β=λD/d.";
+    }
+    if (question.includes("polar") || question.includes("brewster")) {
+      return "Polarization needs transverse waves; Brewster uses tan ip = μ.";
+    }
+    return "Decide if the idea is ray optics or wave optics, then apply the matching rule.";
+  }
+
+  if (topic === "Thermodynamics") {
+    if (question.includes("carnot") || question.includes("efficiency")) {
+      return "Carnot efficiency depends only on the two reservoir temperatures.";
+    }
+    if (question.includes("entropy") || question.includes("second law")) {
+      return "Entropy of the universe never decreases for real processes.";
+    }
+    if (question.includes("ideal gas") || question.includes("isothermal") || question.includes("adiabatic")) {
+      return "For ideal gas U depends only on T; pick the right process relation.";
+    }
+    return "State the process type (iso-T, adiabatic, cycle) before calculating.";
+  }
+
+  if (topic === "Modern Physics") {
+    if (question.includes("photoelectric") || question.includes("photon") || question.includes("work function")) {
+      return "Use E=hf and Kmax=hf−φ; intensity changes number of electrons, not Kmax.";
+    }
+    if (question.includes("bohr") || question.includes("hydrogen") || question.includes("orbit")) {
+      return "Bohr: L=nℏ and En=−13.6/n² eV for hydrogen.";
+    }
+    if (
+      question.includes("nuclear") ||
+      question.includes("radio") ||
+      question.includes("decay") ||
+      question.includes("half")
+    ) {
+      return "Activity A=λN and remaining fraction halves each half-life.";
+    }
+    return "Connect quanta, waves or nucleus ideas — avoid classical-only thinking.";
+  }
+
+  if (level === "Advanced") {
+    return "Eliminate options that break units or limiting cases (0, ∞, special angles).";
+  }
+  return "Cross out options that clearly violate the basic definition, then compare the rest.";
+}
+
 export async function onRequestGet({ request, env }) {
   try {
     const url = new URL(request.url);
@@ -41,12 +135,6 @@ export async function onRequestGet({ request, env }) {
       } catch (e) {
         options = [];
       }
-      const exp = String(q.explanation || "");
-      const hint =
-        exp.length > 12
-          ? exp.slice(0, Math.min(90, Math.floor(exp.length * 0.45))) + "…"
-          : "Think about the core formula or definition for this topic.";
-
       return {
         id: q.id,
         topic: q.topic,
@@ -55,7 +143,7 @@ export async function onRequestGet({ request, env }) {
         options,
         correct_answer: q.correct_answer,
         explanation: q.explanation,
-        hint,
+        hint: makeHint(q),
       };
     });
 
