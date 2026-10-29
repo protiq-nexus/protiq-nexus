@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaderboard | ProtiQ Nexus</title>
+  <link rel="icon" href="/logo.png" type="image/png">
+  <style>
+    :root {
+      --bg:#080d19; --panel:#101a2b; --text:#f2f6ff; --muted:#a1b0c8;
+      --blue:#65aaff; --cyan:#54ead5; --border:#24334a; --gold:#f5c542;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: Arial, sans-serif; line-height: 1.65; min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+    a { color: inherit; text-decoration: none; }
+    header { border-bottom: 1px solid var(--border); }
+    nav {
+      max-width: 900px; margin: auto; padding: 12px 20px;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; }
+    .brand img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+    .brand span { color: var(--cyan); }
+    .navlinks { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--muted); }
+    .navlinks a:hover, .navlinks a.active { color: var(--cyan); }
+    main { flex: 1; max-width: 900px; width: 100%; margin: auto; padding: 28px 20px; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    .sub { color: var(--muted); margin-bottom: 20px; font-size: 14px; }
+    .card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 14px; padding: 8px; overflow: hidden;
+    }
+    .row {
+      display: grid; grid-template-columns: 56px 1fr auto;
+      gap: 12px; align-items: center;
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+    }
+    .row:last-child { border-bottom: 0; }
+    .rank {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: grid; place-items: center; font-weight: 800; font-size: 13px;
+      background: #0a1120; border: 1px solid var(--border); color: var(--muted);
+    }
+    .rank.top1 { background: rgba(245,197,66,.15); color: var(--gold); border-color: var(--gold); }
+    .rank.top2 { background: rgba(101,170,255,.12); color: var(--blue); border-color: var(--blue); }
+    .rank.top3 { background: rgba(84,234,213,.12); color: var(--cyan); border-color: var(--cyan); }
+    .name { font-weight: 700; }
+    .email { color: var(--muted); font-size: 12px; }
+    .pts { font-weight: 800; color: var(--cyan); white-space: nowrap; }
+    .btn {
+      margin-top: 16px; padding: 10px 16px; border: 0; border-radius: 9px; cursor: pointer;
+      background: linear-gradient(100deg, #347cf0, #24b8b0); color: #06101b; font-weight: 800;
+    }
+    .btn2 {
+      background: transparent; border: 1px solid var(--border); color: var(--text);
+      margin-left: 8px;
+    }
+    #status { color: var(--muted); margin-bottom: 12px; }
+    .err { color: #ff6b6b; }
+    footer {
+      border-top: 1px solid var(--border); padding: 16px; text-align: center;
+      color: var(--muted); font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a class="brand" href="/">
+        <img src="/logo.png" alt="ProtiQ">
+        ProtiQ<span> Nexus</span>
+      </a>
+      <div class="navlinks">
+        <a href="/">Home</a>
+        <a href="/olympiad.html">Olympiad</a>
+        <a href="/leaderboard.html" class="active">Leaderboard</a>
+        <a href="/research.html">Research</a>
+        <a href="/ai.html">AI</a>
+        <a href="/profile.html">Profile</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Leaderboard</h1>
+    <p class="sub">Points from Olympiad Practice Mode. Keep unlocking harder parts to climb.</p>
+    <div id="status">Loading...</div>
+    <div class="card" id="list"></div>
+    <div>
+      <button class="btn" type="button" id="refresh">Refresh</button>
+      <a class="btn btn2" href="/olympiad.html" style="display:inline-block">Go Practice</a>
+    </div>
+  </main>
+
+  <footer>© ProtiQ Labs · ProtiQ Nexus</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const sb = window.supabase.createClient(
+      "https://dylkrvdnyefdeuxtchji.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
+    );
+
+    async function loadBoard() {
+      const status = document.getElementById("status");
+      const list = document.getElementById("list");
+      status.textContent = "Loading...";
+      status.className = "";
+      try {
+        const res = await fetch("/api/leaderboard");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed");
+        const leaders = data.leaders || [];
+        if (!leaders.length) {
+          status.textContent = "No scores yet. Complete Practice Mode to appear here.";
+          list.innerHTML = "";
+          return;
+        }
+        status.textContent = "Top " + leaders.length + " players";
+        list.innerHTML = leaders.map(function (r, i) {
+          const rankClass = i === 0 ? "top1" : i === 1 ? "top2" : i === 2 ? "top3" : "";
+          const name = r.display_name || (r.user_email || "").split("@")[0] || "Player";
+          const email = r.user_email || "";
+          return (
+            '<div class="row">' +
+              '<div class="rank ' + rankClass + '">#' + (i + 1) + '</div>' +
+              '<div><div class="name">' + name + '</div><div class="email">' + email + '</div></div>' +
+              '<div class="pts">' + (r.total_points || 0) + ' pts</div>' +
+            '</div>'
+          );
+        }).join("");
+      } catch (e) {
+        status.className = "err";
+        status.textContent = e.message || String(e);
+        list.innerHTML = "";
+      }
+    }
+
+    document.getElementById("refresh").onclick = loadBoard;
+
+    (async function () {
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+          document.getElementById("status").textContent = "Login required. Redirecting...";
+          window.location.href = "/login.html";
+          return;
+        }
+        loadBoard();
+      } catch (e) {
+        document.getElementById("status").className = "err";
+        document.getElementById("status").textContent = e.message || String(e);
+      }
+    })();
+  </script>
+</body>
+</html>
