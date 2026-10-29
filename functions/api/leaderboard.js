@@ -1,22 +1,28 @@
-function publicName(row) {
-  const custom = String(row.display_name || "").trim();
-  // ignore auto email-prefix style names that look like pure mailbox local-part only if you want —
-  // if display_name was set from email split, treat empty/custom better:
-  if (custom && !custom.includes("@")) {
-    // still might be gmail local part; user can set real name later
-    // prefer custom if not equal to generating from email only when length ok
+function playerIdFromEmail(email) {
+  const s = String(email || "x");
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
   }
-  if (custom && custom.length >= 2 && !custom.includes("@")) {
+  return 1000 + (hash % 9000);
+}
+
+function publicName(row) {
+  const email = String(row.user_email || "");
+  const local = email.split("@")[0] || "";
+  const custom = String(row.display_name || "").trim();
+
+  // auto name from gmail local-part → ignore
+  if (
+    custom &&
+    !custom.includes("@") &&
+    custom.toLowerCase() !== local.toLowerCase() &&
+    custom.toLowerCase() !== local.split("+")[0].toLowerCase() &&
+    !/^player\s*#?\d+$/i.test(custom)
+  ) {
     return custom;
   }
-  // stable pseudo id from email
-  const email = String(row.user_email || "x");
-  let hash = 0;
-  for (let i = 0; i < email.length; i++) {
-    hash = (hash * 31 + email.charCodeAt(i)) >>> 0;
-  }
-  const id = 1000 + (hash % 9000);
-  return "Player #" + id;
+  return "Player #" + playerIdFromEmail(email);
 }
 
 export async function onRequestGet({ env }) {
@@ -31,7 +37,6 @@ export async function onRequestGet({ env }) {
     const leaders = (result.results || []).map((row) => ({
       display_name: publicName(row),
       total_points: row.total_points || 0,
-      // email পাঠাবে না
     }));
 
     return Response.json({ success: true, leaders });
