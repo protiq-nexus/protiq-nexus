@@ -77,11 +77,16 @@
       document.getElementById("msg").className = "";
     }
 
+    // CHANGED: client is created only once and reused (was created on every call)
+    var sbClient = null;
     function getSB() {
-      return window.supabase.createClient(
-        "https://dylkrvdnyefdeuxtchji.supabase.co",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
-      );
+      if (!sbClient) {
+        sbClient = window.supabase.createClient(
+          "https://dylkrvdnyefdeuxtchji.supabase.co",
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
+        );
+      }
+      return sbClient;
     }
 
     async function doSignup() {
@@ -93,10 +98,28 @@
         if (password.length < 6) { msg.innerText = "Password min 6"; msg.className = "err"; return; }
         msg.className = "";
         msg.innerText = "Creating...";
-        var { error } = await getSB().auth.signUp({ email: email, password: password });
+
+        // CHANGED: emailRedirectTo sends the user back to your site after clicking the verification link
+        var result = await getSB().auth.signUp({
+          email: email,
+          password: password,
+          options: { emailRedirectTo: window.location.origin + "/login" }
+        });
+        var data = result.data;
+        var error = result.error;
         if (error) { msg.innerText = error.message; msg.className = "err"; return; }
-        msg.innerText = "Account created! Login tab e giye sign in koro.";
+
+        // NEW: Supabase returns a user with empty identities when the email is already registered
+        if (data && data.user && data.user.identities && data.user.identities.length === 0) {
+          msg.innerText = "This email is already registered. Please login.";
+          msg.className = "err";
+          return;
+        }
+
+        // CHANGED: showLogin() first (it clears the message), THEN show the verification message
         showLogin();
+        msg.className = "";
+        msg.innerText = "Account created! We sent a verification link to your email. Open it (check Spam too), confirm your email, then login here.";
       } catch (e) {
         msg.innerText = String(e.message || e);
         msg.className = "err";
@@ -112,7 +135,16 @@
         msg.className = "";
         msg.innerText = "Signing in...";
         var { error } = await getSB().auth.signInWithPassword({ email: email, password: password });
-        if (error) { msg.innerText = error.message; msg.className = "err"; return; }
+        if (error) {
+          // NEW: clear message when the email is not verified yet
+          if (error.message && error.message.toLowerCase().indexOf("not confirmed") !== -1) {
+            msg.innerText = "Your email is not verified yet. Please open the verification link we sent to your email (check Spam too), then login.";
+          } else {
+            msg.innerText = error.message;
+          }
+          msg.className = "err";
+          return;
+        }
         msg.innerText = "Success!";
         window.location.href = "/profile.html";
       } catch (e) {
