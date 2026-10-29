@@ -39,10 +39,13 @@
       cursor: pointer; font-weight: 800;
       background: linear-gradient(100deg, #347cf0, #24b8b0); color: #06101b;
     }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
     .btn2 {
       width: 100%; margin-top: 10px; padding: 10px; border-radius: 10px; cursor: pointer;
       background: transparent; border: 1px solid var(--border); color: var(--text); font-weight: 700;
     }
+    .btn2:disabled { opacity: .5; cursor: not-allowed; }
+    #code { text-align: center; font-size: 22px; letter-spacing: 6px; }
     #msg { margin-top: 12px; font-size: 13px; color: var(--cyan); min-height: 18px; }
     #msg.err { color: var(--danger); }
     .hidden { display: none; }
@@ -57,7 +60,7 @@
       <div class="sub">Sign in to use Olympiad, AI and Research</div>
     </div>
 
-    <div class="tabs">
+    <div class="tabs" id="tabs">
       <button type="button" class="tab active" id="tabLogin">Login</button>
       <button type="button" class="tab" id="tabSignup">Sign up</button>
     </div>
@@ -69,6 +72,14 @@
       <input id="password" type="password" required minlength="6" placeholder="At least 6 characters">
       <button class="btn" type="submit" id="submitBtn">Login</button>
     </form>
+
+    <!-- NEW: 6-digit verification code box -->
+    <div id="verifyBox" class="hidden">
+      <label>6-digit verification code</label>
+      <input id="code" type="text" inputmode="numeric" maxlength="10" autocomplete="one-time-code" placeholder="------">
+      <button class="btn" type="button" id="verifyBtn">Verify</button>
+      <button class="btn2" type="button" id="backBtn">← Back to login</button>
+    </div>
 
     <button type="button" class="btn2 hidden" id="resendBtn">Resend verification email</button>
     <div id="msg"></div>
@@ -86,14 +97,37 @@
     const msg = document.getElementById("msg");
     const resendBtn = document.getElementById("resendBtn");
     const submitBtn = document.getElementById("submitBtn");
+    // NEW elements
+    const formEl = document.getElementById("form");
+    const tabsEl = document.getElementById("tabs");
+    const verifyBox = document.getElementById("verifyBox");
+    const verifyBtn = document.getElementById("verifyBtn");
+    const backBtn = document.getElementById("backBtn");
+    let pendingEmail = "";
 
     function setMsg(text, isErr) {
       msg.textContent = text || "";
       msg.className = isErr ? "err" : "";
     }
 
+    // NEW: show / hide the code box
+    function showVerify(email) {
+      pendingEmail = email;
+      formEl.classList.add("hidden");
+      tabsEl.classList.add("hidden");
+      verifyBox.classList.remove("hidden");
+      resendBtn.classList.remove("hidden");
+      document.getElementById("code").value = "";
+    }
+    function hideVerify() {
+      verifyBox.classList.add("hidden");
+      formEl.classList.remove("hidden");
+      tabsEl.classList.remove("hidden");
+    }
+
     function setMode(next) {
       mode = next;
+      hideVerify();
       document.getElementById("tabLogin").classList.toggle("active", mode === "login");
       document.getElementById("tabSignup").classList.toggle("active", mode === "signup");
       submitBtn.textContent = mode === "login" ? "Login" : "Sign up";
@@ -104,7 +138,7 @@
     document.getElementById("tabLogin").onclick = function () { setMode("login"); };
     document.getElementById("tabSignup").onclick = function () { setMode("signup"); };
 
-    // Email confirm link থেকে এলে session অটো নেয় → সরাসরি ভিতরে
+    // Email confirm link থেকে এলে session অটো নেয় → সরাসরি ভিতরে
     (async function boot() {
       try {
         const { data: { session } } = await sb.auth.getSession();
@@ -145,8 +179,14 @@
             window.location.replace("/profile.html");
             return;
           }
-          setMsg("Verification email sent. Open your inbox (and Spam), click the link. Then you will be logged in automatically.");
-          resendBtn.classList.remove("hidden");
+          // NEW: email already registered
+          if (data.user && data.user.identities && data.user.identities.length === 0) {
+            setMsg("This email is already registered. Please login.", true);
+            return;
+          }
+          // CHANGED: show the code box (the email link still works too)
+          showVerify(email);
+          setMsg("Verification email sent. Enter the 6-digit code below, or click the link in the email. Check Spam too.");
         } else {
           const { error } = await sb.auth.signInWithPassword({ email, password });
           if (error) throw error;
@@ -154,14 +194,51 @@
           window.location.replace("/profile.html");
         }
       } catch (err) {
-        setMsg(err.message || String(err), true);
+        const m = (err.message || "").toLowerCase();
+        // NEW: unverified user gets the code box
+        if (mode === "login" && m.indexOf("not confirmed") !== -1) {
+          showVerify(email);
+          setMsg("Your email is not verified yet. Enter the code we sent, or tap Resend.", true);
+        } else {
+          setMsg(err.message || String(err), true);
+        }
       } finally {
         submitBtn.disabled = false;
       }
     };
 
+    // NEW: check the 6-digit code
+    verifyBtn.onclick = async function () {
+      const code = document.getElementById("code").value.trim();
+      if (!/^\d{6,10}$/.test(code)) {
+        setMsg("Enter the code from your email.", true);
+        return;
+      }
+      setMsg("Verifying...");
+      verifyBtn.disabled = true;
+      try {
+        const { error } = await sb.auth.verifyOtp({ email: pendingEmail, token: code, type: "signup" });
+        if (error) throw error;
+        setMsg("Email verified. Redirecting...");
+        window.location.replace("/profile.html");
+      } catch (err) {
+        setMsg(err.message || String(err), true);
+      } finally {
+        verifyBtn.disabled = false;
+      }
+    };
+
+    // NEW: back to login
+    backBtn.onclick = function () {
+      pendingEmail = "";
+      setMode("login");
+    };
+
+    // Resend (now with a 60 second wait so the email limit is not used up)
+    let cooldownTimer = null;
     resendBtn.onclick = async function () {
-      const email = document.getElementById("email").value.trim();
+      if (resendBtn.disabled) return;
+      const email = pendingEmail || document.getElementById("email").value.trim();
       if (!email) {
         setMsg("Enter your email first.", true);
         return;
@@ -177,6 +254,20 @@
         });
         if (error) throw error;
         setMsg("Verification email resent. Check inbox and Spam.");
+        let left = 60;
+        resendBtn.disabled = true;
+        resendBtn.textContent = "Resend in " + left + "s";
+        clearInterval(cooldownTimer);
+        cooldownTimer = setInterval(function () {
+          left--;
+          if (left <= 0) {
+            clearInterval(cooldownTimer);
+            resendBtn.disabled = false;
+            resendBtn.textContent = "Resend verification email";
+          } else {
+            resendBtn.textContent = "Resend in " + left + "s";
+          }
+        }, 1000);
       } catch (err) {
         setMsg(err.message || String(err), true);
       }
