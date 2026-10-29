@@ -4,10 +4,16 @@ function levelForPart(part) {
   return "Advanced";
 }
 
+function pointsPerCorrect(part) {
+  if (part <= 1) return 10;
+  if (part === 2) return 20;
+  if (part === 3) return 30;
+  return 30 + (part - 3) * 10;
+}
+
 function pointsForPart(part, correct) {
-  const per = part <= 1 ? 10 : part === 2 ? 20 : 30;
-  let pts = correct * per;
-  if (correct >= 7) pts += 50;
+  let pts = correct * pointsPerCorrect(part);
+  if (correct >= 7) pts += 40 + part * 10;
   return pts;
 }
 
@@ -15,7 +21,7 @@ export async function onRequestGet({ request, env }) {
   try {
     const url = new URL(request.url);
     const topic = url.searchParams.get("topic") || "Mechanics";
-    const part = Math.min(3, Math.max(1, parseInt(url.searchParams.get("part") || "1", 10)));
+    const part = Math.max(1, parseInt(url.searchParams.get("part") || "1", 10));
     const level = levelForPart(part);
 
     const result = await env.DB.prepare(
@@ -35,15 +41,21 @@ export async function onRequestGet({ request, env }) {
       } catch (e) {
         options = [];
       }
+      const exp = String(q.explanation || "");
+      const hint =
+        exp.length > 12
+          ? exp.slice(0, Math.min(90, Math.floor(exp.length * 0.45))) + "…"
+          : "Think about the core formula or definition for this topic.";
+
       return {
         id: q.id,
         topic: q.topic,
         level: q.level,
         question: q.question,
         options,
-        // correct_answer frontend-এ শুধু submit-এর পর / আলাদা চেক — প্রথমে লুকাও চাইলে সরাও
         correct_answer: q.correct_answer,
         explanation: q.explanation,
+        hint,
       };
     });
 
@@ -52,6 +64,7 @@ export async function onRequestGet({ request, env }) {
       topic,
       part,
       level,
+      points_per_correct: pointsPerCorrect(part),
       questions,
     });
   } catch (error) {
@@ -65,7 +78,7 @@ export async function onRequestPost({ request, env }) {
     const body = await request.json();
     const email = String(body.email || "").trim().toLowerCase();
     const topic = String(body.topic || "").trim();
-    const part = Math.min(3, Math.max(1, parseInt(body.part || "1", 10)));
+    const part = Math.max(1, parseInt(body.part || "1", 10));
     const correct = Math.max(0, parseInt(body.correct || "0", 10));
     const total = Math.max(1, parseInt(body.total || "10", 10));
 
@@ -74,7 +87,7 @@ export async function onRequestPost({ request, env }) {
     }
 
     const earned = pointsForPart(part, correct);
-    const unlockedNext = correct >= 7 && part < 3;
+    const unlockedNext = correct >= 7;
     const nextPart = unlockedNext ? part + 1 : part;
 
     const existing = await env.DB.prepare(
@@ -83,7 +96,6 @@ export async function onRequestPost({ request, env }) {
       .bind(email, topic)
       .first();
 
-    const newPoints = (existing?.points || 0) + earned;
     const savedPart = Math.max(existing?.part || 1, nextPart);
 
     await env.DB.prepare(
@@ -118,12 +130,9 @@ export async function onRequestPost({ request, env }) {
       earned,
       unlockedNext,
       nextPart: savedPart,
-      message:
-        correct >= 7
-          ? unlockedNext
-            ? `Great! Part ${part + 1} unlocked.`
-            : "Excellent! Topic mastered."
-          : "Score below 7/10. Try this part again to unlock next.",
+      message: unlockedNext
+        ? "Great! Part " + (part + 1) + " unlocked — harder set available."
+        : "Need at least 7/10 to unlock the next harder part. Try again!",
     });
   } catch (error) {
     console.error(error);
