@@ -49,7 +49,6 @@
     .rank.top2 { background: rgba(101,170,255,.12); color: var(--blue); border-color: var(--blue); }
     .rank.top3 { background: rgba(84,234,213,.12); color: var(--cyan); border-color: var(--cyan); }
     .name { font-weight: 700; }
-    .email { color: var(--muted); font-size: 12px; }
     .pts { font-weight: 800; color: var(--cyan); white-space: nowrap; }
     .btn {
       margin-top: 16px; padding: 10px 16px; border: 0; border-radius: 9px; cursor: pointer;
@@ -57,7 +56,7 @@
     }
     .btn2 {
       background: transparent; border: 1px solid var(--border); color: var(--text);
-      margin-left: 8px;
+      margin-left: 8px; display: inline-block;
     }
     #status { color: var(--muted); margin-bottom: 12px; }
     .err { color: #ff6b6b; }
@@ -87,12 +86,12 @@
 
   <main>
     <h1>Leaderboard</h1>
-    <p class="sub">Points from Olympiad Practice Mode. Keep unlocking harder parts to climb.</p>
+    <p class="sub">Points from Olympiad Practice Mode. Names only — no emails shown.</p>
     <div id="status">Loading...</div>
     <div class="card" id="list"></div>
     <div>
       <button class="btn" type="button" id="refresh">Refresh</button>
-      <a class="btn btn2" href="/olympiad.html" style="display:inline-block">Go Practice</a>
+      <a class="btn btn2" href="/olympiad.html">Go Practice</a>
     </div>
   </main>
 
@@ -123,12 +122,11 @@
         status.textContent = "Top " + leaders.length + " players";
         list.innerHTML = leaders.map(function (r, i) {
           const rankClass = i === 0 ? "top1" : i === 1 ? "top2" : i === 2 ? "top3" : "";
-          const name = r.display_name || (r.user_email || "").split("@")[0] || "Player";
-          const email = r.user_email || "";
+          const name = r.display_name || "Player";
           return (
             '<div class="row">' +
               '<div class="rank ' + rankClass + '">#' + (i + 1) + '</div>' +
-              '<div><div class="name">' + name + '</div><div class="email">' + email + '</div></div>' +
+              '<div><div class="name">' + name + '</div></div>' +
               '<div class="pts">' + (r.total_points || 0) + ' pts</div>' +
             '</div>'
           );
