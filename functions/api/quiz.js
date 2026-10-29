@@ -199,17 +199,15 @@ export async function onRequestPost({ request, env }) {
       .bind(email, topic, savedPart, correct, total, earned)
       .run();
 
-    const name = email.split("@")[0];
-    await env.DB.prepare(
-      `INSERT INTO leaderboard (user_email, display_name, total_points, updated_at)
-       VALUES (?, ?, ?, datetime('now'))
-       ON CONFLICT(user_email) DO UPDATE SET
-         total_points = leaderboard.total_points + excluded.total_points,
-         display_name = excluded.display_name,
-         updated_at = datetime('now')`
-    )
-      .bind(email, name, earned)
-      .run();
+ await env.DB.prepare(
+  `INSERT INTO leaderboard (user_email, display_name, total_points, updated_at)
+   VALUES (?, NULL, ?, datetime('now'))
+   ON CONFLICT(user_email) DO UPDATE SET
+     total_points = leaderboard.total_points + excluded.total_points,
+     updated_at = datetime('now')`
+)
+  .bind(email, earned)
+  .run();
 
     return Response.json({
       success: true,
