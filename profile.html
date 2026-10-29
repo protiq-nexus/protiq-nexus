@@ -13,11 +13,29 @@
     .navlinks a { color:#a1b0c8; margin-left:14px; font-size:13px; }
     .navlinks a.active { color:#54ead5; }
     .wrap { max-width:700px; margin:auto; padding:40px 20px; }
-    .card { background:#101a2b; border:1px solid #24334a; border-radius:16px; padding:28px; text-align:center; }
-    .avatar { width:72px; height:72px; border-radius:50%; margin:0 auto 16px; background:linear-gradient(135deg,#347cf0,#24b8b0); display:grid; place-items:center; font-size:28px; font-weight:800; color:#06101b; }
-    .btn { display:inline-block; margin-top:14px; padding:10px 16px; border-radius:9px; border:0; cursor:pointer; background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b; font-weight:800; }
+    .card { background:#101a2b; border:1px solid #24334a; border-radius:16px; padding:28px; text-align:center; margin-bottom:18px; }
+    .avatar { width:96px; height:96px; border-radius:50%; margin:0 auto 16px; background:linear-gradient(135deg,#347cf0,#24b8b0); display:grid; place-items:center; font-size:34px; font-weight:800; color:#06101b; overflow:hidden; }
+    .avatar img { width:100%; height:100%; object-fit:cover; }
+    .btn { display:inline-block; margin:14px 4px 0; padding:10px 16px; border-radius:9px; border:0; cursor:pointer; background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b; font-weight:800; }
     .btn2 { background:transparent; border:1px solid #24334a; color:#f2f6ff; }
     #status { color:#a1b0c8; font-size:14px; margin-top:10px; }
+
+    .details { text-align:left; }
+    .details h3 { margin:0 0 14px; }
+    .row { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid #1b2a40; font-size:14px; }
+    .row:last-child { border-bottom:0; }
+    .row .k { width:110px; color:#a1b0c8; flex-shrink:0; }
+    .row .v { flex:1; word-break:break-word; white-space:pre-wrap; }
+
+    .form { text-align:left; }
+    .form h3 { margin:0 0 14px; }
+    label { display:block; font-size:13px; color:#a1b0c8; margin-bottom:6px; }
+    input, textarea { width:100%; box-sizing:border-box; padding:12px; margin-bottom:12px; border:1px solid #24334a; border-radius:9px; background:#0a1120; color:#fff; font-family:inherit; font-size:14px; }
+    textarea { min-height:90px; resize:vertical; }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media (max-width:520px) { .grid2 { grid-template-columns:1fr; } }
+    #formMsg { margin-top:10px; font-size:14px; color:#54ead5; }
+    .err { color:#ff6b6b !important; }
   </style>
 </head>
 <body>
@@ -36,12 +54,55 @@
 
   <div class="wrap">
     <h1>Profile</h1>
+
+    <!-- Top card: photo, name, email -->
     <div class="card">
       <div class="avatar" id="av">?</div>
       <h2 id="name">Checking...</h2>
       <p id="email" style="color:#a1b0c8"></p>
       <div id="status">Loading session...</div>
       <div id="actions"></div>
+      <input type="file" id="photoInput" accept="image/png,image/jpeg,image/webp" style="display:none">
+    </div>
+
+    <!-- View mode: saved details -->
+    <div class="card details" id="detailsCard" style="display:none">
+      <h3>About</h3>
+      <div id="detailsList"></div>
+    </div>
+
+    <!-- Edit mode: form -->
+    <div class="card form" id="formCard" style="display:none">
+      <h3>Edit profile</h3>
+      <label>Full name</label>
+      <input id="f_name" type="text" maxlength="80" placeholder="Your full name">
+      <div class="grid2">
+        <div>
+          <label>Profession</label>
+          <input id="f_prof" type="text" maxlength="80" placeholder="e.g. Student, Teacher">
+        </div>
+        <div>
+          <label>Age</label>
+          <input id="f_age" type="number" min="5" max="120" placeholder="e.g. 18">
+        </div>
+      </div>
+      <label>Institute</label>
+      <input id="f_inst" type="text" maxlength="120" placeholder="School / College / University">
+      <div class="grid2">
+        <div>
+          <label>Hobbies</label>
+          <input id="f_hobby" type="text" maxlength="120" placeholder="e.g. Reading, Chess">
+        </div>
+        <div>
+          <label>Location</label>
+          <input id="f_loc" type="text" maxlength="80" placeholder="City, Country">
+        </div>
+      </div>
+      <label>Bio</label>
+      <textarea id="f_bio" maxlength="500" placeholder="Tell something about yourself (max 500 characters)"></textarea>
+      <button type="button" class="btn" id="saveBtn">Save</button>
+      <button type="button" class="btn btn2" id="cancelBtn">Cancel</button>
+      <div id="formMsg"></div>
     </div>
   </div>
 
@@ -52,13 +113,158 @@
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
     );
 
+    var currentUser = null;
+    var profile = {};
+
+    function $(id) { return document.getElementById(id); }
+
+    function setAvatar(url, letter) {
+      var av = $("av");
+      av.textContent = "";
+      if (url) {
+        var img = document.createElement("img");
+        img.src = url;
+        img.alt = "Profile photo";
+        av.appendChild(img);
+      } else {
+        av.textContent = letter;
+      }
+    }
+
+    function showFormMsg(text, isErr) {
+      var m = $("formMsg");
+      m.textContent = text;
+      m.className = isErr ? "err" : "";
+    }
+
+    function renderHeader() {
+      var em = currentUser.email || "User";
+      var display = profile.full_name || em.split("@")[0];
+      $("name").textContent = display;
+      $("email").textContent = em;
+      setAvatar(profile.avatar_url, em.charAt(0).toUpperCase());
+    }
+
+    function renderDetails() {
+      var fields = [
+        ["Profession", profile.profession],
+        ["Institute", profile.institute],
+        ["Age", profile.age],
+        ["Hobbies", profile.hobbies],
+        ["Location", profile.location],
+        ["Bio", profile.bio]
+      ];
+      var list = $("detailsList");
+      list.textContent = "";
+      fields.forEach(function (f) {
+        var row = document.createElement("div");
+        row.className = "row";
+        var k = document.createElement("div");
+        k.className = "k";
+        k.textContent = f[0];
+        var v = document.createElement("div");
+        v.className = "v";
+        v.textContent = (f[1] === null || f[1] === undefined || f[1] === "") ? "—" : String(f[1]);
+        row.appendChild(k);
+        row.appendChild(v);
+        list.appendChild(row);
+      });
+      $("detailsCard").style.display = "block";
+    }
+
+    function fillForm() {
+      $("f_name").value = profile.full_name || "";
+      $("f_prof").value = profile.profession || "";
+      $("f_age").value = profile.age || "";
+      $("f_inst").value = profile.institute || "";
+      $("f_hobby").value = profile.hobbies || "";
+      $("f_loc").value = profile.location || "";
+      $("f_bio").value = profile.bio || "";
+      showFormMsg("", false);
+    }
+
+    function openEdit() {
+      fillForm();
+      $("formCard").style.display = "block";
+      $("detailsCard").style.display = "none";
+      $("formCard").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function closeEdit() {
+      $("formCard").style.display = "none";
+      renderDetails();
+    }
+
+    async function saveProfile() {
+      var ageVal = $("f_age").value.trim();
+      var age = null;
+      if (ageVal !== "") {
+        age = parseInt(ageVal, 10);
+        if (isNaN(age) || age < 5 || age > 120) {
+          showFormMsg("Age must be between 5 and 120", true);
+          return;
+        }
+      }
+      var payload = {
+        id: currentUser.id,
+        full_name: $("f_name").value.trim() || null,
+        profession: $("f_prof").value.trim() || null,
+        institute: $("f_inst").value.trim() || null,
+        age: age,
+        hobbies: $("f_hobby").value.trim() || null,
+        location: $("f_loc").value.trim() || null,
+        bio: $("f_bio").value.trim() || null,
+        updated_at: new Date().toISOString()
+      };
+      showFormMsg("Saving...", false);
+      var res = await sb.from("profiles").upsert(payload);
+      if (res.error) {
+        showFormMsg("Error: " + res.error.message, true);
+        return;
+      }
+      Object.assign(profile, payload);
+      renderHeader();
+      closeEdit();
+    }
+
+    async function uploadPhoto(file) {
+      var status = $("status");
+      var allowed = ["image/png", "image/jpeg", "image/webp"];
+      if (allowed.indexOf(file.type) === -1) {
+        status.textContent = "Please choose a PNG, JPG or WEBP image";
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        status.textContent = "Photo is too big. Max size is 2 MB";
+        return;
+      }
+      status.textContent = "Uploading photo...";
+      var path = currentUser.id + "/avatar";
+      var up = await sb.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
+      if (up.error) {
+        status.textContent = "Upload error: " + up.error.message;
+        return;
+      }
+      var pub = sb.storage.from("avatars").getPublicUrl(path);
+      var url = pub.data.publicUrl + "?v=" + Date.now();
+      var res = await sb.from("profiles").upsert({ id: currentUser.id, avatar_url: url, updated_at: new Date().toISOString() });
+      if (res.error) {
+        status.textContent = "Error: " + res.error.message;
+        return;
+      }
+      profile.avatar_url = url;
+      renderHeader();
+      status.textContent = "Photo updated";
+    }
+
     async function load() {
-      const { data: { session }, error } = await sb.auth.getSession();
-      const name = document.getElementById("name");
-      const email = document.getElementById("email");
-      const status = document.getElementById("status");
-      const actions = document.getElementById("actions");
-      const av = document.getElementById("av");
+      var out = await sb.auth.getSession();
+      var session = out.data.session;
+      var error = out.error;
+      var name = $("name");
+      var email = $("email");
+      var status = $("status");
+      var actions = $("actions");
 
       if (error) {
         status.textContent = "Error: " + error.message;
@@ -69,21 +275,54 @@
         name.textContent = "Guest";
         email.textContent = "";
         status.textContent = "Not logged in";
-        av.textContent = "?";
+        setAvatar(null, "?");
         actions.innerHTML = '<a class="btn" href="/login.html">Login / Sign up</a>';
         return;
       }
 
-      const em = session.user.email || "User";
-      name.textContent = em.split("@")[0];
-      email.textContent = em;
-      status.textContent = "Logged in · Free plan";
-      av.textContent = em.charAt(0).toUpperCase();
-      actions.innerHTML = '<button class="btn btn2" id="out">Logout</button>';
-      document.getElementById("out").onclick = async function () {
+      currentUser = session.user;
+
+      // Load saved profile (if any)
+      var res = await sb.from("profiles").select("*").eq("id", currentUser.id).maybeSingle();
+      if (res.error) {
+        status.textContent = "Profile error: " + res.error.message;
+      } else {
+        profile = res.data || {};
+        status.textContent = "Logged in · Free plan";
+      }
+
+      renderHeader();
+      renderDetails();
+
+      actions.textContent = "";
+      var photoBtn = document.createElement("button");
+      photoBtn.className = "btn";
+      photoBtn.textContent = "Change photo";
+      photoBtn.onclick = function () { $("photoInput").click(); };
+
+      var editBtn = document.createElement("button");
+      editBtn.className = "btn";
+      editBtn.textContent = "Edit profile";
+      editBtn.onclick = openEdit;
+
+      var outBtn = document.createElement("button");
+      outBtn.className = "btn btn2";
+      outBtn.textContent = "Logout";
+      outBtn.onclick = async function () {
         await sb.auth.signOut();
         window.location.href = "/login.html";
       };
+
+      actions.appendChild(photoBtn);
+      actions.appendChild(editBtn);
+      actions.appendChild(outBtn);
+
+      $("photoInput").onchange = function () {
+        if (this.files && this.files[0]) uploadPhoto(this.files[0]);
+        this.value = "";
+      };
+      $("saveBtn").onclick = saveProfile;
+      $("cancelBtn").onclick = closeEdit;
     }
 
     load();
