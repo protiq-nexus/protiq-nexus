@@ -4,154 +4,183 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login | ProtiQ Nexus</title>
+  <link rel="icon" href="/logo.png" type="image/png">
   <style>
-    body { margin:0; background:#080d19; color:#f2f6ff; font-family:Arial,sans-serif; }
-    a { color:#54ead5; text-decoration:none; }
-    header { padding:14px 20px; border-bottom:1px solid #24334a; }
-    main { max-width:420px; margin:40px auto; padding:0 16px; }
-    .card { background:#101a2b; border:1px solid #24334a; border-radius:16px; padding:28px; }
-    h1 { margin:0 0 6px; }
-    .sub { color:#a1b0c8; font-size:14px; margin:0 0 16px; }
-    .tabs { display:flex; gap:8px; margin-bottom:16px; }
-    .tab { flex:1; padding:10px; border-radius:9px; border:1px solid #24334a; background:transparent; color:#a1b0c8; cursor:pointer; }
-    .tab.active { border-color:#54ead5; color:#54ead5; }
-    label { display:block; font-size:13px; color:#a1b0c8; margin-bottom:6px; }
-    input { width:100%; box-sizing:border-box; padding:12px; margin-bottom:12px; border:1px solid #24334a; border-radius:9px; background:#0a1120; color:#fff; }
-    .btn { width:100%; padding:12px; border:0; border-radius:9px; cursor:pointer; background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b; font-weight:800; }
-    #msg { margin-top:14px; font-size:14px; color:#54ead5; }
-    .err { color:#ff6b6b !important; }
+    :root {
+      --bg:#080d19; --panel:#101a2b; --text:#f2f6ff; --muted:#a1b0c8;
+      --cyan:#54ead5; --border:#24334a; --danger:#ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+      font-family: Arial, sans-serif; display: grid; place-items: center; padding: 20px;
+    }
+    .card {
+      width: 100%; max-width: 400px; background: var(--panel);
+      border: 1px solid var(--border); border-radius: 16px; padding: 28px;
+    }
+    .brand { text-align: center; margin-bottom: 18px; }
+    .brand img { width: 64px; height: 64px; border-radius: 50%; }
+    h1 { margin: 10px 0 4px; font-size: 22px; text-align: center; }
+    .sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab {
+      flex: 1; padding: 10px; border-radius: 9px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); cursor: pointer; font-weight: 700;
+    }
+    .tab.active { border-color: var(--cyan); color: var(--cyan); }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 6px; }
+    input {
+      width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: #0a1120; color: var(--text); outline: none;
+    }
+    .btn {
+      width: 100%; margin-top: 16px; padding: 12px; border: 0; border-radius: 10px;
+      cursor: pointer; font-weight: 800;
+      background: linear-gradient(100deg, #347cf0, #24b8b0); color: #06101b;
+    }
+    .btn2 {
+      width: 100%; margin-top: 10px; padding: 10px; border-radius: 10px; cursor: pointer;
+      background: transparent; border: 1px solid var(--border); color: var(--text); font-weight: 700;
+    }
+    #msg { margin-top: 12px; font-size: 13px; color: var(--cyan); min-height: 18px; }
+    #msg.err { color: var(--danger); }
+    .hidden { display: none; }
+    a { color: var(--cyan); }
   </style>
 </head>
 <body>
-  <header><a href="/">← Home</a></header>
-  <main>
-    <div class="card">
-      <h1 id="title">Login</h1>
-      <p class="sub" id="sub">Account thakle login koro</p>
-
-      <div class="tabs">
-        <button type="button" class="tab active" id="tabL" onclick="showLogin()">Login</button>
-        <button type="button" class="tab" id="tabS" onclick="showSignup()">Sign up</button>
-      </div>
-
-      <div id="loginBox">
-        <label>Email</label>
-        <input id="le" type="email" placeholder="you@email.com">
-        <label>Password</label>
-        <input id="lp" type="password" placeholder="password">
-        <button type="button" class="btn" onclick="doLogin()">Login now</button>
-      </div>
-
-      <div id="signupBox" style="display:none">
-        <label>Email</label>
-        <input id="se" type="email" placeholder="new@email.com">
-        <label>Password (min 6)</label>
-        <input id="sp" type="password" placeholder="new password">
-        <button type="button" class="btn" onclick="doSignup()">Create account</button>
-      </div>
-
-      <div id="msg"></div>
+  <div class="card">
+    <div class="brand">
+      <img src="/logo.png" alt="ProtiQ">
+      <h1>ProtiQ Nexus</h1>
+      <div class="sub">Sign in to use Olympiad, AI and Research</div>
     </div>
-  </main>
+
+    <div class="tabs">
+      <button type="button" class="tab active" id="tabLogin">Login</button>
+      <button type="button" class="tab" id="tabSignup">Sign up</button>
+    </div>
+
+    <form id="form" autocomplete="on">
+      <label>Email</label>
+      <input id="email" type="email" required placeholder="you@email.com">
+      <label>Password</label>
+      <input id="password" type="password" required minlength="6" placeholder="At least 6 characters">
+      <button class="btn" type="submit" id="submitBtn">Login</button>
+    </form>
+
+    <button type="button" class="btn2 hidden" id="resendBtn">Resend verification email</button>
+    <div id="msg"></div>
+    <p class="sub" style="margin-top:16px"><a href="/">← Back to Home</a></p>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    function showLogin() {
-      document.getElementById("loginBox").style.display = "block";
-      document.getElementById("signupBox").style.display = "none";
-      document.getElementById("tabL").classList.add("active");
-      document.getElementById("tabS").classList.remove("active");
-      document.getElementById("title").innerText = "Login";
-      document.getElementById("sub").innerText = "Account thakle login koro";
-      document.getElementById("msg").innerText = "";
+    const sb = window.supabase.createClient(
+      "https://dylkrvdnyefdeuxtchji.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
+    );
+
+    let mode = "login"; // login | signup
+    const msg = document.getElementById("msg");
+    const resendBtn = document.getElementById("resendBtn");
+    const submitBtn = document.getElementById("submitBtn");
+
+    function setMsg(text, isErr) {
+      msg.textContent = text || "";
+      msg.className = isErr ? "err" : "";
     }
 
-    function showSignup() {
-      document.getElementById("loginBox").style.display = "none";
-      document.getElementById("signupBox").style.display = "block";
-      document.getElementById("tabS").classList.add("active");
-      document.getElementById("tabL").classList.remove("active");
-      document.getElementById("title").innerText = "Sign up";
-      document.getElementById("sub").innerText = "Notun account banao";
-      document.getElementById("msg").innerText = "Signup form open";
-      document.getElementById("msg").className = "";
+    function setMode(next) {
+      mode = next;
+      document.getElementById("tabLogin").classList.toggle("active", mode === "login");
+      document.getElementById("tabSignup").classList.toggle("active", mode === "signup");
+      submitBtn.textContent = mode === "login" ? "Login" : "Sign up";
+      resendBtn.classList.toggle("hidden", mode !== "signup");
+      setMsg("");
     }
 
-    // CHANGED: client is created only once and reused (was created on every call)
-    var sbClient = null;
-    function getSB() {
-      if (!sbClient) {
-        sbClient = window.supabase.createClient(
-          "https://dylkrvdnyefdeuxtchji.supabase.co",
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
-        );
-      }
-      return sbClient;
-    }
+    document.getElementById("tabLogin").onclick = function () { setMode("login"); };
+    document.getElementById("tabSignup").onclick = function () { setMode("signup"); };
 
-    async function doSignup() {
-      var msg = document.getElementById("msg");
+    // Email confirm link থেকে এলে session অটো নেয় → সরাসরি ভিতরে
+    (async function boot() {
       try {
-        var email = document.getElementById("se").value.trim();
-        var password = document.getElementById("sp").value;
-        if (!email) { msg.innerText = "Email dao"; msg.className = "err"; return; }
-        if (password.length < 6) { msg.innerText = "Password min 6"; msg.className = "err"; return; }
-        msg.className = "";
-        msg.innerText = "Creating...";
-
-        // CHANGED: emailRedirectTo sends the user back to your site after clicking the verification link
-        var result = await getSB().auth.signUp({
-          email: email,
-          password: password,
-          options: { emailRedirectTo: window.location.origin + "/login" }
-        });
-        var data = result.data;
-        var error = result.error;
-        if (error) { msg.innerText = error.message; msg.className = "err"; return; }
-
-        // NEW: Supabase returns a user with empty identities when the email is already registered
-        if (data && data.user && data.user.identities && data.user.identities.length === 0) {
-          msg.innerText = "This email is already registered. Please login.";
-          msg.className = "err";
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+          setMsg("Already signed in. Redirecting...");
+          window.location.replace("/profile.html");
           return;
         }
-
-        // CHANGED: showLogin() first (it clears the message), THEN show the verification message
-        showLogin();
-        msg.className = "";
-        msg.innerText = "Account created! We sent a verification link to your email. Open it (check Spam too), confirm your email, then login here.";
-      } catch (e) {
-        msg.innerText = String(e.message || e);
-        msg.className = "err";
-      }
-    }
-
-    async function doLogin() {
-      var msg = document.getElementById("msg");
-      try {
-        var email = document.getElementById("le").value.trim();
-        var password = document.getElementById("lp").value;
-        if (!email || !password) { msg.innerText = "Email & password dao"; msg.className = "err"; return; }
-        msg.className = "";
-        msg.innerText = "Signing in...";
-        var { error } = await getSB().auth.signInWithPassword({ email: email, password: password });
-        if (error) {
-          // NEW: clear message when the email is not verified yet
-          if (error.message && error.message.toLowerCase().indexOf("not confirmed") !== -1) {
-            msg.innerText = "Your email is not verified yet. Please open the verification link we sent to your email (check Spam too), then login.";
-          } else {
-            msg.innerText = error.message;
+        // URL-এ auth tokens থাকলে detect
+        sb.auth.onAuthStateChange(function (event, session) {
+          if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+            window.location.replace("/profile.html");
           }
-          msg.className = "err";
-          return;
-        }
-        msg.innerText = "Success!";
-        window.location.href = "/profile.html";
+        });
       } catch (e) {
-        msg.innerText = String(e.message || e);
-        msg.className = "err";
+        setMsg(e.message || String(e), true);
       }
-    }
+    })();
+
+    document.getElementById("form").onsubmit = async function (e) {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      setMsg(mode === "login" ? "Logging in..." : "Creating account...");
+      submitBtn.disabled = true;
+      try {
+        if (mode === "signup") {
+          const { data, error } = await sb.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: "https://protiq-nexus.pages.dev/profile.html"
+            }
+          });
+          if (error) throw error;
+          if (data.session) {
+            setMsg("Account created. Redirecting...");
+            window.location.replace("/profile.html");
+            return;
+          }
+          setMsg("Verification email sent. Open your inbox (and Spam), click the link. Then you will be logged in automatically.");
+          resendBtn.classList.remove("hidden");
+        } else {
+          const { error } = await sb.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          setMsg("Success. Redirecting...");
+          window.location.replace("/profile.html");
+        }
+      } catch (err) {
+        setMsg(err.message || String(err), true);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    };
+
+    resendBtn.onclick = async function () {
+      const email = document.getElementById("email").value.trim();
+      if (!email) {
+        setMsg("Enter your email first.", true);
+        return;
+      }
+      setMsg("Sending verification email...");
+      try {
+        const { error } = await sb.auth.resend({
+          type: "signup",
+          email,
+          options: {
+            emailRedirectTo: "https://protiq-nexus.pages.dev/profile.html"
+          }
+        });
+        if (error) throw error;
+        setMsg("Verification email resent. Check inbox and Spam.");
+      } catch (err) {
+        setMsg(err.message || String(err), true);
+      }
+    };
   </script>
 </body>
 </html>
