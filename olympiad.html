@@ -42,7 +42,9 @@
       padding:10px 16px; border:0; border-radius:9px; cursor:pointer;
       background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b; font-weight:800;
     }
-    .btn2 { background:transparent; border:1px solid var(--border); color:var(--text); }
+    .btn2 { background:transparent; border:1px solid var(--border); color:var(--text); font-weight:600; }
+    .hint-btn { margin-top:8px; padding:8px 12px; font-size:13px; }
+    .hint-line { display:none; margin-top:8px; color:var(--cyan); font-size:13px; }
     #info { color:var(--muted); }
     .msg { margin-top:12px; color:var(--cyan); }
     .err { color:var(--danger); }
@@ -72,14 +74,13 @@
     <div id="app" style="display:none">
       <h1>Olympiad</h1>
       <div class="tabs">
-        <button class="tab active" type="button" onclick="showPanel('practice')">Practice Mode</button>
-        <button class="tab" type="button" onclick="showPanel('browse')">Browse All</button>
-        <button class="tab" type="button" onclick="showPanel('board')">Leaderboard</button>
+        <button class="tab active" type="button" data-panel="practice">Practice Mode</button>
+        <button class="tab" type="button" data-panel="browse">Browse All</button>
+        <button class="tab" type="button" data-panel="board">Leaderboard</button>
       </div>
 
-      <!-- PRACTICE -->
       <div id="practice" class="panel active">
-        <p class="meta">Each part has 10 questions. Score ≥ 7/10 to unlock the next harder part. Points go to leaderboard.</p>
+        <p class="meta">10 questions each part. Score ≥ 7/10 to unlock the next harder part. Parts never end. Use Hint if stuck.</p>
         <div class="filters" id="practiceTopics">
           <button class="topic-btn active" data-topic="Mechanics">Mechanics</button>
           <button class="topic-btn" data-topic="Electricity">Electricity</button>
@@ -93,7 +94,6 @@
         <div class="msg" id="quizMsg"></div>
       </div>
 
-      <!-- BROWSE -->
       <div id="browse" class="panel">
         <div class="filters" id="topicFilters">
           <button class="filter-btn active" data-topic="all">All Topics</button>
@@ -112,11 +112,10 @@
         <div id="questionList">Loading...</div>
       </div>
 
-      <!-- LEADERBOARD -->
       <div id="board" class="panel">
         <p class="meta">Top scores</p>
         <div id="leaderList">Loading...</div>
-        <button class="btn btn2" type="button" onclick="loadBoard()">Refresh</button>
+        <button class="btn btn2" type="button" id="refreshBoard">Refresh</button>
       </div>
     </div>
   </div>
@@ -141,12 +140,18 @@
       ["practice", "browse", "board"].forEach(function (p) {
         document.getElementById(p).classList.toggle("active", p === id);
       });
-      document.querySelectorAll(".tabs .tab").forEach(function (t, i) {
-        t.classList.toggle("active", ["practice", "browse", "board"][i] === id);
+      document.querySelectorAll(".tabs .tab").forEach(function (t) {
+        t.classList.toggle("active", t.getAttribute("data-panel") === id);
       });
       if (id === "board") loadBoard();
       if (id === "browse") loadBrowse();
     }
+
+    document.querySelector(".tabs").onclick = function (e) {
+      const t = e.target.closest(".tab");
+      if (!t) return;
+      showPanel(t.getAttribute("data-panel"));
+    };
 
     document.getElementById("practiceTopics").onclick = function (e) {
       if (!e.target.classList.contains("topic-btn")) return;
@@ -160,11 +165,13 @@
     };
 
     document.getElementById("startBtn").onclick = startQuiz;
+    document.getElementById("refreshBoard").onclick = loadBoard;
 
     async function startQuiz() {
       const box = document.getElementById("quizBox");
       const msg = document.getElementById("quizMsg");
       msg.textContent = "";
+      msg.className = "msg";
       box.innerHTML = "Loading 10 questions...";
       selected = {};
       try {
@@ -172,20 +179,33 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed");
         quizQuestions = data.questions || [];
-        document.getElementById("partInfo").textContent = "Part " + data.part + " · " + data.level;
+        document.getElementById("partInfo").textContent =
+          "Part " + data.part + " · " + data.level + " · +" + (data.points_per_correct || "?") + " pts each";
         if (!quizQuestions.length) {
-          box.innerHTML = "<p>Not enough questions for this part. Add more in D1.</p>";
+          box.innerHTML = "<p>Not enough questions for this part.</p>";
           return;
         }
         box.innerHTML = quizQuestions.map(function (q, i) {
           const opts = (q.options || []).map(function (opt) {
-            return '<div class="option" data-qid="' + q.id + '" data-opt="' + encodeURIComponent(String(opt)) + '">' + opt + '</div>';
+            return '<div class="option" data-qid="' + q.id + '" data-opt="' + encodeURIComponent(String(opt)) + '">' + String(opt) + '</div>';
           }).join("");
-          return '<div class="q-card"><div><span class="tag">' + q.topic + '</span><span class="tag">' + q.level + '</span></div>' +
-            '<p><b>' + (i + 1) + '.</b> ' + q.question + '</p>' + opts + '</div>';
+          const hint = encodeURIComponent(q.hint || "Think about the core idea.");
+          return '<div class="q-card">' +
+            '<div><span class="tag">' + q.topic + '</span><span class="tag">' + q.level + '</span></div>' +
+            '<p><b>' + (i + 1) + '.</b> ' + q.question + '</p>' + opts +
+            '<button type="button" class="btn btn2 hint-btn" data-hint="' + hint + '">Hint</button>' +
+            '<div class="hint-line"></div></div>';
         }).join("") + '<button class="btn" type="button" id="submitQuiz">Submit answers</button>';
 
         box.onclick = function (e) {
+          if (e.target.classList.contains("hint-btn")) {
+            const line = e.target.nextElementSibling;
+            if (line) {
+              line.style.display = "block";
+              line.textContent = "Hint: " + decodeURIComponent(e.target.getAttribute("data-hint"));
+            }
+            return;
+          }
           const el = e.target.closest(".option");
           if (!el) return;
           const qid = el.getAttribute("data-qid");
@@ -205,18 +225,13 @@
       const msg = document.getElementById("quizMsg");
       let correct = 0;
       quizQuestions.forEach(function (q) {
-        const cardOpts = document.querySelectorAll('.option[data-qid="' + q.id + '"]');
-        cardOpts.forEach(function (o) {
+        document.querySelectorAll('.option[data-qid="' + q.id + '"]').forEach(function (o) {
           o.style.pointerEvents = "none";
           const val = decodeURIComponent(o.getAttribute("data-opt"));
           if (val === q.correct_answer) o.classList.add("correct");
+          if (selected[q.id] && val === selected[q.id] && val !== q.correct_answer) o.classList.add("wrong");
         });
         if (selected[q.id] === q.correct_answer) correct++;
-        else if (selected[q.id]) {
-          document.querySelectorAll('.option[data-qid="' + q.id + '"]').forEach(function (o) {
-            if (decodeURIComponent(o.getAttribute("data-opt")) === selected[q.id]) o.classList.add("wrong");
-          });
-        }
       });
 
       try {
@@ -237,7 +252,7 @@
         msg.textContent = "Score: " + correct + "/" + quizQuestions.length + " · +" + data.earned + " points. " + data.message;
         if (data.unlockedNext) {
           currentPart = data.nextPart;
-          document.getElementById("partInfo").textContent = "Unlocked Part " + currentPart;
+          document.getElementById("partInfo").textContent = "Unlocked Part " + currentPart + " — press Start Part";
         }
       } catch (e) {
         msg.className = "msg err";
@@ -266,9 +281,7 @@
       list.innerHTML = filtered.slice(0, 50).map(function (q, idx) {
         let options = [];
         try { options = typeof q.options === "string" ? JSON.parse(q.options) : (q.options || []); } catch (e) {}
-        const opts = options.map(function (opt) {
-          return '<div class="option">' + opt + '</div>';
-        }).join("");
+        const opts = options.map(function (opt) { return '<div class="option">' + opt + '</div>'; }).join("");
         return '<div class="q-card"><div><span class="tag">' + q.topic + '</span><span class="tag">' + q.level + '</span></div>' +
           '<p><b>' + (idx + 1) + '.</b> ' + q.question + '</p>' + opts +
           '<p class="meta"><b>Answer:</b> ' + q.correct_answer + '</p></div>';
@@ -297,7 +310,10 @@
         const res = await fetch("/api/leaderboard");
         const data = await res.json();
         const leaders = data.leaders || [];
-        if (!leaders.length) { box.innerHTML = "<p class='meta'>No scores yet. Complete a practice part!</p>"; return; }
+        if (!leaders.length) {
+          box.innerHTML = "<p class='meta'>No scores yet. Complete a practice part!</p>";
+          return;
+        }
         box.innerHTML = leaders.map(function (r, i) {
           return '<div class="lb-row"><span>#' + (i + 1) + ' ' + (r.display_name || r.user_email) + '</span><span>' + r.total_points + ' pts</span></div>';
         }).join("");
