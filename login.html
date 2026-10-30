@@ -57,7 +57,7 @@
     <div class="brand">
       <img src="/logo.png" alt="ProtiQ">
       <h1>ProtiQ Nexus</h1>
-      <div class="sub">Sign in to use Olympiad, AI and Research</div>
+      <div class="sub">Sign in to join the leaderboard and save your profile</div>
     </div>
 
     <div class="tabs" id="tabs">
@@ -92,6 +92,15 @@
       "https://dylkrvdnyefdeuxtchji.supabase.co",
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
     );
+
+    // NEW: after login, go back to the page the user came from (?next=/olympiad.html)
+    function getNext() {
+      try {
+        const n = new URLSearchParams(window.location.search).get("next");
+        if (n && n.charAt(0) === "/" && n.charAt(1) !== "/" && n.indexOf("\\") === -1) return n;
+      } catch (e) {}
+      return "/profile.html";
+    }
 
     let mode = "login"; // login | signup
     const msg = document.getElementById("msg");
@@ -144,13 +153,13 @@
         const { data: { session } } = await sb.auth.getSession();
         if (session) {
           setMsg("Already signed in. Redirecting...");
-          window.location.replace("/profile.html");
+          window.location.replace(getNext());
           return;
         }
         // URL-এ auth tokens থাকলে detect
         sb.auth.onAuthStateChange(function (event, session) {
           if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-            window.location.replace("/profile.html");
+            window.location.replace(getNext());
           }
         });
       } catch (e) {
@@ -176,7 +185,7 @@
           if (error) throw error;
           if (data.session) {
             setMsg("Account created. Redirecting...");
-            window.location.replace("/profile.html");
+            window.location.replace(getNext());
             return;
           }
           // NEW: email already registered
@@ -191,7 +200,7 @@
           const { error } = await sb.auth.signInWithPassword({ email, password });
           if (error) throw error;
           setMsg("Success. Redirecting...");
-          window.location.replace("/profile.html");
+          window.location.replace(getNext());
         }
       } catch (err) {
         const m = (err.message || "").toLowerCase();
@@ -220,7 +229,7 @@
         const { error } = await sb.auth.verifyOtp({ email: pendingEmail, token: code, type: "signup" });
         if (error) throw error;
         setMsg("Email verified. Redirecting...");
-        window.location.replace("/profile.html");
+        window.location.replace(getNext());
       } catch (err) {
         setMsg(err.message || String(err), true);
       } finally {
