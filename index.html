@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="ProtiQ Nexus — Physics Olympiad, Research, AI and Experiments. Where Physics Meets Possibility.">
+  <meta name="description" content="ProtiQ Nexus — Science Olympiad, Research, AI and Experiments. Where curiosity meets clarity.">
   <title>ProtiQ Nexus | ProtiQ Labs</title>
   <link rel="icon" href="/favicon.jpg" type="image/jpeg">
   <link rel="apple-touch-icon" href="/favicon.jpg">
@@ -16,7 +16,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ProtiQ Nexus">
   <meta property="og:title" content="ProtiQ Nexus | ProtiQ Labs">
-  <meta property="og:description" content="Think deeper. Explore physics. Olympiad, research papers, AI help — all in one place.">
+  <meta property="og:description" content="Think deeper. Explore science. Olympiad, research, AI help — all in one place.">
   <meta property="og:url" content="https://protiq-nexus.pages.dev/">
   <meta property="og:image" content="https://protiq-nexus.pages.dev/logo.png">
   <meta property="og:image:type" content="image/png">
@@ -24,7 +24,7 @@
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="ProtiQ Nexus | ProtiQ Labs">
-  <meta name="twitter:description" content="Think deeper. Explore physics. Olympiad, research, AI.">
+  <meta name="twitter:description" content="Think deeper. Explore science. Olympiad, research, AI.">
   <meta name="twitter:image" content="https://protiq-nexus.pages.dev/logo.png">
   <style>
     :root {
@@ -49,7 +49,7 @@
     .navlinks { display: flex; gap: 18px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
     .navlinks a:hover, .navlinks a.active { color: var(--cyan); }
     main { flex: 1; }
-    .hero { max-width: 1100px; margin: auto; padding: 60px 20px 40px; text-align: center; }
+    .hero { max-width: 1100px; margin: auto; padding: 60px 20px 28px; text-align: center; }
     .hero-logo {
       width: 120px; height: 120px; border-radius: 50%; object-fit: cover;
       margin-bottom: 18px; box-shadow: 0 0 40px rgba(84,234,213,.3);
@@ -66,7 +66,19 @@
       background: linear-gradient(90deg, var(--blue), var(--cyan));
       color: transparent; background-clip: text; -webkit-background-clip: text;
     }
-    .hero p { color: var(--muted); max-width: 560px; margin: 0 auto 28px; }
+    .hero p { color: var(--muted); max-width: 560px; margin: 0 auto 12px; }
+    .about {
+      max-width: 900px; margin: 0 auto 40px; padding: 0 20px; text-align: center;
+    }
+    .about h2 { margin: 10px 0; font-size: 24px; }
+    .about > p { color: var(--muted); margin: 0 auto 20px; max-width: 640px; }
+    .benefits {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; text-align: left;
+    }
+    .benefit {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    }
+    .benefit p { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
     .grid {
       max-width: 1100px; margin: 0 auto 60px; padding: 0 20px;
       display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;
@@ -85,7 +97,7 @@
       color: var(--muted); font-size: 12px;
     }
     @media (max-width: 700px) {
-      .grid { grid-template-columns: 1fr; }
+      .grid, .benefits { grid-template-columns: 1fr; }
       .navlinks { gap: 10px; font-size: 12px; }
     }
   </style>
@@ -103,39 +115,66 @@
       <div class="navlinks">
         <a href="/" class="active">Home</a>
         <a href="/olympiad.html">Olympiad</a>
+        <a href="/leaderboard.html">Leaderboard</a>
         <a href="/research.html">Research</a>
         <a href="/ai.html">AI</a>
         <a href="/profile.html">Profile</a>
       </div>
     </nav>
   </header>
+
   <main>
     <section class="hero">
       <img class="hero-logo" src="/logo.png" alt="ProtiQ Nexus">
       <div class="eyebrow">ProtiQ Nexus</div>
-      <h1>Think deeper.<br>Explore <span>physics.</span></h1>
+      <h1>Think deeper.<br>Explore <span>science.</span></h1>
       <p>
         Olympiad practice, research papers, AI help and experiments —
-        all in one place. Choose a section to begin.
+        all in one place. Built for students who want clarity, not only marks.
       </p>
     </section>
+
+    <section class="about">
+      <div class="eyebrow">Why ProtiQ Nexus</div>
+      <h2>Learn science with purpose</h2>
+      <p>
+        ProtiQ Nexus is a free learning hub for serious science students.
+        Start with Physics Olympiad practice, then grow into research reading,
+        AI-guided doubt solving, and deeper understanding — step by step.
+      </p>
+      <div class="benefits">
+        <div class="benefit">
+          <b>For students</b>
+          <p>Topic-wise questions, hints, harder levels over time, and points on a leaderboard.</p>
+        </div>
+        <div class="benefit">
+          <b>For curiosity</b>
+          <p>Read research ideas and ask the AI when a concept is unclear.</p>
+        </div>
+        <div class="benefit">
+          <b>Our destination</b>
+          <p>A trusted place where science practice, research and guidance meet — free to start.</p>
+        </div>
+      </div>
+    </section>
+
     <div class="grid">
       <a class="card" href="/olympiad.html">
         <div class="icon">◇</div>
         <h2>Olympiad</h2>
-        <p>Topic-wise physics questions with answers and explanations. Practice by level.</p>
+        <p>Topic-wise questions with answers and explanations. Practice by level and climb parts.</p>
         <span class="go">Open Olympiad →</span>
       </a>
       <a class="card" href="/research.html">
         <div class="icon">⌘</div>
         <h2>Research</h2>
-        <p>Publish and explore physics research papers. Share work with the world.</p>
+        <p>Publish and explore science research papers. Share work with the world.</p>
         <span class="go">Open Research →</span>
       </a>
       <a class="card" href="/ai.html">
         <div class="icon">✦</div>
         <h2>AI Assistant</h2>
-        <p>Ask any physics question. Get clear explanations powered by AI.</p>
+        <p>Ask any science question. Get clear explanations powered by AI.</p>
         <span class="go">Open AI →</span>
       </a>
       <a class="card" href="/profile.html">
@@ -146,6 +185,7 @@
       </a>
     </div>
   </main>
+
   <footer>
     © <span id="year"></span> ProtiQ Labs · ProtiQ Nexus
   </footer>
