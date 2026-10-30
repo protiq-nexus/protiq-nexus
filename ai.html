@@ -19,7 +19,9 @@
     .btn { padding:12px 18px; border:0; border-radius:9px; cursor:pointer; background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b; font-weight:800; }
     #answer { color:#a1b0c8; font-size:14px; line-height:1.7; }
     #answer strong { color:#54ead5; }
+    #answer a, #guestNote a { color:#54ead5; font-weight:700; }
     #info { color:#a1b0c8; margin-bottom:16px; }
+    #guestNote { display:none; color:#a1b0c8; font-size:13px; margin:0 0 14px; }
   </style>
 </head>
 <body>
@@ -37,10 +39,12 @@
   </header>
 
   <div class="wrap">
-    <div id="info">Checking login...</div>
+    <div id="info">Loading...</div>
     <div id="app" style="display:none">
       <h1>Physics AI</h1>
       <p style="color:#a1b0c8">Ask any physics question.</p>
+      <!-- NEW: note for guests -->
+      <p id="guestNote">You are using the AI as a guest, so the number of questions per day may be limited. <a href="/login.html?next=/ai.html">Login / Sign up</a> for more.</p>
       <div class="box">
         <div class="row">
           <input id="q" type="text" placeholder="e.g. What is viscosity?">
@@ -59,9 +63,28 @@
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
     );
 
+    let isLoggedIn = false; // NEW
+
+    // NEW: escape text so nothing typed or returned can inject HTML
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+
+    // NEW: attach the login token (if the user is logged in) so the server can tell guests from members
+    async function authHeaders(extra) {
+      const h = extra || {};
+      try {
+        const r = await sb.auth.getSession();
+        if (r.data.session) h["Authorization"] = "Bearer " + r.data.session.access_token;
+      } catch (e) {}
+      return h;
+    }
+
     function formatAI(text) {
       if (!text) return "";
-      var t = String(text);
+      var t = esc(text); // CHANGED: escape first
       t = t.replace(/^#{1,6}\s+/gm, "");
       t = t.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
       t = t.replace(/\*(.*?)\*/g, "$1");
@@ -76,14 +99,20 @@
       try {
         var res = await fetch("/api/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: await authHeaders({ "Content-Type": "application/json" }), // CHANGED
           body: JSON.stringify({ messages: [{ role: "user", content: q }] })
         });
         var data = await res.json();
+        // NEW: daily limit reached
+        if (res.status === 429) {
+          box.innerHTML = "<p>" + esc(data.error || "Daily question limit reached.") + "</p>" +
+            (isLoggedIn ? "" : '<p><a href="/login.html?next=/ai.html">Login / Sign up</a> to ask more questions.</p>');
+          return;
+        }
         if (!res.ok) throw new Error(data.error || "Failed");
         box.innerHTML = formatAI(data.answer);
       } catch (e) {
-        box.innerHTML = "<p>Error: " + (e.message || e) + "</p>";
+        box.innerHTML = "<p>Error: " + esc(e.message || e) + "</p>"; // CHANGED: escaped
       }
     }
 
@@ -91,14 +120,15 @@
       if (e.key === "Enter") ask();
     });
 
+    // CHANGED: no login wall. Everyone can use the page.
     (async function () {
       try {
         var { data: { session }, error } = await sb.auth.getSession();
         if (error) { info.textContent = "Auth error: " + error.message; return; }
-        if (!session) {
-          info.textContent = "Not logged in. Redirecting...";
-          window.location.href = "/login.html";
-          return;
+        if (session) {
+          isLoggedIn = true;
+        } else {
+          document.getElementById("guestNote").style.display = "block";
         }
         info.style.display = "none";
         document.getElementById("app").style.display = "block";
