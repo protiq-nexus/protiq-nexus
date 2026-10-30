@@ -104,13 +104,25 @@
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
     );
 
+    // NEW: escape text so user names cannot inject HTML
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+
     async function loadBoard() {
       const status = document.getElementById("status");
       const list = document.getElementById("list");
       status.textContent = "Loading...";
       status.className = "";
       try {
-        const res = await fetch("/api/leaderboard");
+        // NEW: send the login token with the request
+        const headers = {};
+        const s = await sb.auth.getSession();
+        if (s.data.session) headers["Authorization"] = "Bearer " + s.data.session.access_token;
+
+        const res = await fetch("/api/leaderboard", { headers: headers });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed");
         const leaders = data.leaders || [];
@@ -122,12 +134,12 @@
         status.textContent = "Top " + leaders.length + " players";
         list.innerHTML = leaders.map(function (r, i) {
           const rankClass = i === 0 ? "top1" : i === 1 ? "top2" : i === 2 ? "top3" : "";
-          const name = r.display_name || "Player";
+          const name = esc(r.display_name || "Player"); // CHANGED: escaped
           return (
             '<div class="row">' +
               '<div class="rank ' + rankClass + '">#' + (i + 1) + '</div>' +
               '<div><div class="name">' + name + '</div></div>' +
-              '<div class="pts">' + (r.total_points || 0) + ' pts</div>' +
+              '<div class="pts">' + esc(r.total_points || 0) + ' pts</div>' +
             '</div>'
           );
         }).join("");
@@ -145,7 +157,8 @@
         const { data: { session } } = await sb.auth.getSession();
         if (!session) {
           document.getElementById("status").textContent = "Login required. Redirecting...";
-          window.location.href = "/login.html";
+          // CHANGED: after login the user comes back to the leaderboard
+          window.location.href = "/login.html?next=/leaderboard.html";
           return;
         }
         loadBoard();
