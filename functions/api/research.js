@@ -1,3 +1,52 @@
+// functions/api/research.js
+// Uploading a research paper needs a valid login.
+
+const SUPABASE_PUBLIC_URL = "https://dylkrvdnyefdeuxtchji.supabase.co";
+// Public "anon" key (the same one already used in the web pages). It is safe to keep here.
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4";
+
+const MAX_UPLOADS_PER_DAY = 5; // per user per day
+
+// Returns { id, email } if the login token is valid, otherwise null
+async function getUser(request) {
+  const auth = request.headers.get("Authorization") || "";
+  if (!auth.startsWith("Bearer ")) return null;
+  const token = auth.slice(7).trim();
+  if (!token) return null;
+  try {
+    const res = await fetch(SUPABASE_PUBLIC_URL + "/auth/v1/user", {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: "Bearer " + token
+      }
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    if (!user || !user.id) return null;
+    return { id: user.id, email: String(user.email || "").toLowerCase() };
+  } catch (e) {
+    return null;
+  }
+}
+
+// Counts how many times something happened today (needs the ai_usage table). Never breaks the upload.
+async function bump(env, id) {
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    const row = await env.DB.prepare(
+      "INSERT INTO ai_usage (id, day, count) VALUES (?1, ?2, 1) " +
+        "ON CONFLICT(id, day) DO UPDATE SET count = count + 1 RETURNING count"
+    )
+      .bind(id, day)
+      .first();
+    return row ? row.count : 0;
+  } catch (e) {
+    console.error("ai_usage table problem:", e);
+    return 0;
+  }
+}
+
 export async function onRequestPost({ request, env }) {
   let uploadedFileName = null;
 
@@ -6,6 +55,24 @@ export async function onRequestPost({ request, env }) {
       return Response.json(
         { error: "Server configuration is incomplete." },
         { status: 500 }
+      );
+    }
+
+    // NEW: only logged-in users can upload
+    const user = await getUser(request);
+    if (!user) {
+      return Response.json(
+        { error: "Please login to upload a research paper." },
+        { status: 401 }
+      );
+    }
+
+    // NEW: limit uploads per user per day
+    const uploads = await bump(env, "r:" + user.id);
+    if (uploads > MAX_UPLOADS_PER_DAY) {
+      return Response.json(
+        { error: "Daily upload limit reached. Please try again tomorrow." },
+        { status: 429 }
       );
     }
 
@@ -90,6 +157,9 @@ export async function onRequestPost({ request, env }) {
     `)
       .bind(title, authors, abstract, subject, fileName, doi || null)
       .run();
+
+    // Keep a record of who uploaded (visible in the Cloudflare logs)
+    console.log("Research uploaded by user:", user.id, "file:", fileName);
 
     return Response.json(
       {
