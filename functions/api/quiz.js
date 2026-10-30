@@ -1,3 +1,54 @@
+// functions/api/quiz.js
+// GET  = anyone can load practice questions (guests included)
+// POST = saving points needs a valid login; identity comes from the login token, not from the page
+
+const SUPABASE_URL = "https://dylkrvdnyefdeuxtchji.supabase.co";
+// Public "anon" key (the same one already used in the web pages). It is safe to keep here.
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4";
+
+const TOPICS = ["Mechanics", "Electricity", "Optics", "Thermodynamics", "Modern Physics"];
+const MAX_SCORED_SUBMITS_PER_DAY = 30; // per user per day
+
+// Returns { id, email } if the login token is valid, otherwise null
+async function getUser(request) {
+  const auth = request.headers.get("Authorization") || "";
+  if (!auth.startsWith("Bearer ")) return null;
+  const token = auth.slice(7).trim();
+  if (!token) return null;
+  try {
+    const res = await fetch(SUPABASE_URL + "/auth/v1/user", {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: "Bearer " + token
+      }
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    if (!user || !user.id || !user.email) return null;
+    return { id: user.id, email: String(user.email).toLowerCase() };
+  } catch (e) {
+    return null;
+  }
+}
+
+// Counts how many times something happened today (needs the ai_usage table). Never breaks the quiz.
+async function bump(env, id) {
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    const row = await env.DB.prepare(
+      "INSERT INTO ai_usage (id, day, count) VALUES (?1, ?2, 1) " +
+        "ON CONFLICT(id, day) DO UPDATE SET count = count + 1 RETURNING count"
+    )
+      .bind(id, day)
+      .first();
+    return row ? row.count : 0;
+  } catch (e) {
+    console.error("ai_usage table problem:", e);
+    return 0;
+  }
+}
+
 function levelForPart(part) {
   if (part <= 1) return "Beginner";
   if (part === 2) return "Intermediate";
@@ -115,7 +166,7 @@ export async function onRequestGet({ request, env }) {
   try {
     const url = new URL(request.url);
     const topic = url.searchParams.get("topic") || "Mechanics";
-    const part = Math.max(1, parseInt(url.searchParams.get("part") || "1", 10));
+    const part = Math.max(1, parseInt(url.searchParams.get("part") || "1", 10) || 1);
     const level = levelForPart(part);
 
     const result = await env.DB.prepare(
@@ -163,20 +214,41 @@ export async function onRequestGet({ request, env }) {
 
 export async function onRequestPost({ request, env }) {
   try {
-    const body = await request.json();
-    const email = String(body.email || "").trim().toLowerCase();
-    const topic = String(body.topic || "").trim();
-    const part = Math.max(1, parseInt(body.part || "1", 10));
-    const correct = Math.max(0, parseInt(body.correct || "0", 10));
-    const total = Math.max(1, parseInt(body.total || "10", 10));
+    // NEW: only logged-in users can save points. The email comes from the token, never from the page.
+    const user = await getUser(request);
+    if (!user) {
+      return Response.json({ error: "Please login to save your score." }, { status: 401 });
+    }
+    const email = user.email;
 
-    if (!email || !topic) {
-      return Response.json({ error: "email and topic required" }, { status: 400 });
+    const body = await request.json();
+    const topic = String(body.topic || "").trim();
+
+    // NEW: sanitise numbers sent by the page
+    let part = parseInt(body.part, 10);
+    if (!Number.isFinite(part)) part = 1;
+    part = Math.min(1000, Math.max(1, part));
+
+    let total = parseInt(body.total, 10);
+    if (!Number.isFinite(total)) total = 10;
+    total = Math.min(10, Math.max(1, total));
+
+    let correct = parseInt(body.correct, 10);
+    if (!Number.isFinite(correct)) correct = 0;
+    correct = Math.min(total, Math.max(0, correct));
+
+    if (!TOPICS.includes(topic)) {
+      return Response.json({ error: "Unknown topic." }, { status: 400 });
     }
 
-    const earned = pointsForPart(part, correct);
-    const unlockedNext = correct >= 7;
-    const nextPart = unlockedNext ? part + 1 : part;
+    // NEW: limit how many scores one user can submit per day
+    const submits = await bump(env, "q:" + user.id);
+    if (submits > MAX_SCORED_SUBMITS_PER_DAY) {
+      return Response.json(
+        { error: "Daily limit for saved attempts reached. Please try again tomorrow." },
+        { status: 429 }
+      );
+    }
 
     const existing = await env.DB.prepare(
       `SELECT points, part FROM user_progress WHERE user_email = ? AND topic = ?`
@@ -184,7 +256,16 @@ export async function onRequestPost({ request, env }) {
       .bind(email, topic)
       .first();
 
-    const savedPart = Math.max(existing?.part || 1, nextPart);
+    // NEW: a part can be scored only after it has been unlocked
+    const unlockedPart = existing?.part || 1;
+    if (part > unlockedPart) {
+      return Response.json({ error: "This part is not unlocked yet." }, { status: 403 });
+    }
+
+    const earned = pointsForPart(part, correct);
+    const unlockedNext = correct >= 7;
+    const nextPart = unlockedNext ? part + 1 : part;
+    const savedPart = Math.max(unlockedPart, nextPart);
 
     await env.DB.prepare(
       `INSERT INTO user_progress (user_email, topic, part, correct_count, total_attempted, points, updated_at)
@@ -199,15 +280,15 @@ export async function onRequestPost({ request, env }) {
       .bind(email, topic, savedPart, correct, total, earned)
       .run();
 
- await env.DB.prepare(
-  `INSERT INTO leaderboard (user_email, display_name, total_points, updated_at)
-   VALUES (?, NULL, ?, datetime('now'))
-   ON CONFLICT(user_email) DO UPDATE SET
-     total_points = leaderboard.total_points + excluded.total_points,
-     updated_at = datetime('now')`
-)
-  .bind(email, earned)
-  .run();
+    await env.DB.prepare(
+      `INSERT INTO leaderboard (user_email, display_name, total_points, updated_at)
+       VALUES (?, NULL, ?, datetime('now'))
+       ON CONFLICT(user_email) DO UPDATE SET
+         total_points = leaderboard.total_points + excluded.total_points,
+         updated_at = datetime('now')`
+    )
+      .bind(email, earned)
+      .run();
 
     return Response.json({
       success: true,
