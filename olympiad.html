@@ -53,6 +53,7 @@
       border:1px solid var(--border); border-radius:10px; margin-bottom:8px; background:var(--panel);
     }
     .meta { color:var(--muted); font-size:13px; margin-bottom:12px; }
+    .loginlink { color:var(--cyan); font-weight:700; }
   </style>
 </head>
 <body>
@@ -70,7 +71,7 @@
   </header>
 
   <div class="wrap">
-    <div id="info">Checking login...</div>
+    <div id="info">Loading...</div>
     <div id="app" style="display:none">
       <h1>Olympiad</h1>
       <div class="tabs">
@@ -80,6 +81,8 @@
       </div>
 
       <div id="practice" class="panel active">
+        <!-- NEW: note for guests -->
+        <p class="meta" id="guestNote" style="display:none">You are practicing as a guest. <a class="loginlink" href="/login.html?next=/olympiad.html">Login / Sign up</a> to save your points and join the leaderboard.</p>
         <p class="meta">10 questions each part. Score ≥ 7/10 to unlock the next harder part. Parts never end. Use Hint if stuck.</p>
         <div class="filters" id="practiceTopics">
           <button class="topic-btn active" data-topic="Mechanics">Mechanics</button>
@@ -128,6 +131,7 @@
     );
 
     let userEmail = "";
+    let isLoggedIn = false; // NEW
     let practiceTopic = "Mechanics";
     let currentPart = 1;
     let quizQuestions = [];
@@ -135,6 +139,23 @@
     let allQuestions = [];
     let currentTopic = "all";
     let currentLevel = "all";
+
+    // NEW: escape text so user names cannot inject HTML
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+
+    // NEW: attach the login token to requests (the server can use it to check who you are)
+    async function authHeaders(extra) {
+      const h = extra || {};
+      try {
+        const r = await sb.auth.getSession();
+        if (r.data.session) h["Authorization"] = "Bearer " + r.data.session.access_token;
+      } catch (e) {}
+      return h;
+    }
 
     function showPanel(id) {
       ["practice", "browse", "board"].forEach(function (p) {
@@ -234,10 +255,23 @@
         if (selected[q.id] === q.correct_answer) correct++;
       });
 
+      // NEW: guests see their score but nothing is saved
+      if (!isLoggedIn) {
+        let t = "Score: " + correct + "/" + quizQuestions.length + ". ";
+        if (correct >= 7) {
+          currentPart++;
+          document.getElementById("partInfo").textContent = "Part " + currentPart + " unlocked — press Start Part";
+          t += "Next part unlocked. ";
+        }
+        msg.className = "msg";
+        msg.innerHTML = esc(t) + '<a class="loginlink" href="/login.html?next=/olympiad.html">Login / Sign up</a> to save your points and join the leaderboard.';
+        return;
+      }
+
       try {
         const res = await fetch("/api/quiz", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: await authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({
             email: userEmail,
             topic: practiceTopic,
@@ -305,34 +339,42 @@
 
     async function loadBoard() {
       const box = document.getElementById("leaderList");
+      // NEW: leaderboard needs login
+      if (!isLoggedIn) {
+        box.innerHTML = '<p class="meta">Login is required to view the leaderboard. <a class="loginlink" href="/login.html?next=/olympiad.html">Login / Sign up</a></p>';
+        return;
+      }
       box.textContent = "Loading...";
       try {
-        const res = await fetch("/api/leaderboard");
+        const res = await fetch("/api/leaderboard", { headers: await authHeaders() });
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed");
         const leaders = data.leaders || [];
         if (!leaders.length) {
           box.innerHTML = "<p class='meta'>No scores yet. Complete a practice part!</p>";
           return;
         }
+        // CHANGED: names are escaped and emails are never shown
         box.innerHTML = leaders.map(function (r, i) {
-          return '<div class="lb-row"><span>#' + (i + 1) + ' ' + (r.display_name || r.user_email) + '</span><span>' + r.total_points + ' pts</span></div>';
+          return '<div class="lb-row"><span>#' + (i + 1) + ' ' + esc(r.display_name || "Player") + '</span><span>' + esc(r.total_points) + ' pts</span></div>';
         }).join("");
       } catch (e) {
         box.innerHTML = "<p class='err'>Could not load leaderboard</p>";
       }
     }
 
+    // CHANGED: no login wall. Everyone can use the page; login only unlocks saving and the leaderboard.
     (async function () {
       const info = document.getElementById("info");
       try {
         const { data: { session }, error } = await sb.auth.getSession();
         if (error) { info.textContent = "Auth error: " + error.message; return; }
-        if (!session) {
-          info.textContent = "Not logged in. Redirecting...";
-          window.location.href = "/login.html";
-          return;
+        if (session) {
+          userEmail = session.user.email || "";
+          isLoggedIn = true;
+        } else {
+          document.getElementById("guestNote").style.display = "block";
         }
-        userEmail = session.user.email || "";
         info.style.display = "none";
         document.getElementById("app").style.display = "block";
       } catch (e) {
