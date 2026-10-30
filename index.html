@@ -67,6 +67,19 @@
       color: transparent; background-clip: text; -webkit-background-clip: text;
     }
     .hero p { color: var(--muted); max-width: 560px; margin: 0 auto 12px; }
+    .cta {
+      display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+      margin: 22px 0 8px;
+    }
+    .btn {
+      display: inline-block; padding: 12px 22px; border-radius: 10px;
+      background: linear-gradient(100deg, #347cf0, #24b8b0);
+      color: #06101b; font-weight: 800; font-size: 14px;
+    }
+    .btn2 {
+      background: transparent; border: 1px solid var(--border); color: var(--text);
+    }
+    .btn:hover { opacity: 0.92; }
     .about {
       max-width: 900px; margin: 0 auto 40px; padding: 0 20px; text-align: center;
     }
@@ -79,25 +92,61 @@
       background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
     }
     .benefit p { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
-    .grid {
-      max-width: 1100px; margin: 0 auto 60px; padding: 0 20px;
-      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;
-    }
-    .card {
-      display: block; padding: 26px; background: var(--panel);
-      border: 1px solid var(--border); border-radius: 16px; transition: .2s;
-    }
-    .card:hover { border-color: var(--cyan); transform: translateY(-3px); }
-    .card .icon { font-size: 28px; margin-bottom: 8px; }
-    .card h2 { margin: 0 0 8px; font-size: 20px; }
-    .card p { margin: 0; color: var(--muted); font-size: 14px; }
-    .card .go { display: inline-block; margin-top: 14px; color: var(--blue); font-size: 13px; font-weight: 600; }
     footer {
       border-top: 1px solid var(--border); padding: 20px; text-align: center;
       color: var(--muted); font-size: 12px;
     }
+    .bg-anim {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    }
+    .bg-anim span {
+      position: absolute; width: 3px; height: 3px; border-radius: 50%;
+      background: rgba(84, 234, 213, 0.55);
+      box-shadow: 0 0 6px rgba(101, 170, 255, 0.35);
+      animation: floatUp linear infinite;
+    }
+    .bg-anim span:nth-child(1) { left: 8%; top: 70%; animation-duration: 14s; }
+    .bg-anim span:nth-child(2) { left: 22%; top: 85%; width: 2px; height: 2px; animation-duration: 18s; animation-delay: 2s; }
+    .bg-anim span:nth-child(3) { left: 40%; top: 75%; animation-duration: 16s; animation-delay: 1s; }
+    .bg-anim span:nth-child(4) { left: 55%; top: 90%; width: 4px; height: 4px; animation-duration: 20s; animation-delay: 3s; }
+    .bg-anim span:nth-child(5) { left: 70%; top: 80%; animation-duration: 15s; animation-delay: 0.5s; }
+    .bg-anim span:nth-child(6) { left: 85%; top: 88%; width: 2px; height: 2px; animation-duration: 17s; animation-delay: 2.5s; }
+    .bg-anim span:nth-child(7) { left: 15%; top: 60%; animation-duration: 19s; animation-delay: 4s; }
+    .bg-anim span:nth-child(8) { left: 92%; top: 55%; animation-duration: 13s; animation-delay: 1.5s; }
+    @keyframes floatUp {
+      0% { transform: translateY(0); opacity: 0; }
+      15% { opacity: 0.7; }
+      85% { opacity: 0.5; }
+      100% { transform: translateY(-100vh); opacity: 0; }
+    }
+    .orbit-wrap {
+      position: absolute; left: 50%; top: 18%;
+      width: min(420px, 80vw); height: min(420px, 80vw);
+      transform: translateX(-50%); opacity: 0.22;
+    }
+    .orbit {
+      position: absolute; inset: 0;
+      border: 1px solid rgba(84, 234, 213, 0.35);
+      border-radius: 50%; animation: spin 48s linear infinite;
+    }
+    .orbit:nth-child(2) {
+      inset: 12%; border-color: rgba(101, 170, 255, 0.3);
+      animation-duration: 36s; animation-direction: reverse;
+    }
+    .orbit:nth-child(3) {
+      inset: 26%; border-color: rgba(84, 234, 213, 0.2);
+      animation-duration: 28s;
+    }
+    .orbit i {
+      position: absolute; top: 0; left: 50%;
+      width: 6px; height: 6px; margin: -3px 0 0 -3px;
+      border-radius: 50%; background: #54ead5;
+      box-shadow: 0 0 10px #54ead5;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    header, main, footer { position: relative; z-index: 1; }
     @media (max-width: 700px) {
-      .grid, .benefits { grid-template-columns: 1fr; }
+      .benefits { grid-template-columns: 1fr; }
       .navlinks { gap: 10px; font-size: 12px; }
     }
   </style>
@@ -106,6 +155,16 @@
   <!-- End Cloudflare Web Analytics -->
 </head>
 <body>
+  <div class="bg-anim" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span>
+    <div class="orbit-wrap">
+      <div class="orbit"><i></i></div>
+      <div class="orbit"><i></i></div>
+      <div class="orbit"><i></i></div>
+    </div>
+  </div>
+
   <header>
     <nav>
       <a class="brand" href="/">
@@ -132,6 +191,10 @@
         Olympiad practice, research papers, AI help and experiments —
         all in one place. Built for students who want clarity, not only marks.
       </p>
+      <div class="cta">
+        <a class="btn" href="/olympiad.html">Start practice</a>
+        <a class="btn btn2" href="/ai.html">Ask AI</a>
+      </div>
     </section>
 
     <section class="about">
@@ -157,8 +220,6 @@
         </div>
       </div>
     </section>
-
-   
   </main>
 
   <footer>
