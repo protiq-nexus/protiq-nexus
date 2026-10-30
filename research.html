@@ -21,12 +21,13 @@
     label { display:block; font-size:13px; color:#a1b0c8; margin-bottom:6px; }
     input, textarea { width:100%; box-sizing:border-box; padding:11px; margin-bottom:12px; border:1px solid #24334a; border-radius:9px; background:#0a1120; color:#fff; }
     textarea { min-height:90px; }
-    .btn { padding:11px 18px; border:0; border-radius:9px; cursor:pointer; background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b; font-weight:800; }
+    .btn { padding:11px 18px; border:0; border-radius:9px; cursor:pointer; background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b; font-weight:800; display:inline-block; }
     .msg { margin-top:10px; color:#54ead5; font-size:14px; }
     .err { color:#ff6b6b; }
     #info { color:#a1b0c8; }
     .meta { color:#a1b0c8; font-size:13px; }
     .links a { color:#65aaff; font-size:13px; }
+    .loginlink { color:#54ead5; font-weight:700; }
   </style>
 </head>
 <body>
@@ -44,7 +45,7 @@
   </header>
 
   <div class="wrap">
-    <div id="info">Checking login...</div>
+    <div id="info">Loading...</div>
     <div id="app" style="display:none">
       <h1>Research Hub</h1>
       <div class="tabs">
@@ -57,7 +58,12 @@
       </div>
 
       <div id="uploadPanel" class="panel">
-        <div class="card">
+        <!-- NEW: shown to guests instead of the upload form -->
+        <div class="card" id="uploadLogin" style="display:none">
+          <p class="meta">You can read all papers without an account. To upload your own research, please login first.</p>
+          <a class="btn" href="/login.html?next=/research.html">Login / Sign up</a>
+        </div>
+        <div class="card" id="uploadForm">
           <label>Title *</label>
           <input id="title" maxlength="200">
           <label>Authors *</label>
@@ -84,6 +90,18 @@
       "https://dylkrvdnyefdeuxtchji.supabase.co",
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
     );
+
+    let isLoggedIn = false; // NEW
+
+    // NEW: attach the login token so the server knows who is uploading
+    async function authHeaders(extra) {
+      const h = extra || {};
+      try {
+        const r = await sb.auth.getSession();
+        if (r.data.session) h["Authorization"] = "Bearer " + r.data.session.access_token;
+      } catch (e) {}
+      return h;
+    }
 
     function showList() {
       document.getElementById("listPanel").classList.add("active");
@@ -122,6 +140,12 @@
 
     async function uploadPaper() {
       var msg = document.getElementById("msg");
+      // NEW: uploading needs an account
+      if (!isLoggedIn) {
+        msg.className = "msg err";
+        msg.textContent = "Please login to upload a paper.";
+        return;
+      }
       msg.className = "msg";
       msg.textContent = "Uploading...";
       try {
@@ -134,7 +158,8 @@
         var file = document.getElementById("file").files[0];
         if (!file) throw new Error("PDF select koro");
         fd.append("file", file);
-        var res = await fetch("/api/research", { method: "POST", body: fd });
+        // CHANGED: send the login token (do not set Content-Type for FormData)
+        var res = await fetch("/api/research", { method: "POST", headers: await authHeaders(), body: fd });
         var data = await res.json();
         if (!res.ok) throw new Error(data.error || "Upload failed");
         msg.textContent = data.message || "Uploaded!";
@@ -146,14 +171,16 @@
       }
     }
 
+    // CHANGED: no login wall. Everyone can read; only the upload form needs login.
     (async function () {
       try {
         var { data: { session }, error } = await sb.auth.getSession();
         if (error) { info.textContent = "Auth error: " + error.message; return; }
-        if (!session) {
-          info.textContent = "Not logged in. Redirecting...";
-          window.location.href = "/login.html";
-          return;
+        if (session) {
+          isLoggedIn = true;
+        } else {
+          document.getElementById("uploadForm").style.display = "none";
+          document.getElementById("uploadLogin").style.display = "block";
         }
         info.style.display = "none";
         document.getElementById("app").style.display = "block";
