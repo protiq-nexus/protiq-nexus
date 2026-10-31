@@ -54,6 +54,15 @@
     .err { color:var(--danger); }
     .lb-row { display:flex; justify-content:space-between; padding:12px 14px; border:1px solid var(--border); border-radius:10px; margin-bottom:8px; background:var(--panel); }
     #info { color:var(--muted); }
+    .cardgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:14px; margin:12px 0 22px; }
+    .pick { text-align:left; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:20px; cursor:pointer; color:var(--text); font:inherit; transition:.2s; }
+    .pick:hover { border-color:var(--cyan); transform:translateY(-3px); }
+    .pick .ic { font-size:30px; display:block; margin-bottom:8px; }
+    .pick b { display:block; font-size:18px; }
+    .pick small { color:var(--muted); display:block; margin-top:4px; font-size:13px; line-height:1.4; }
+    .crumbs { display:flex; flex-wrap:wrap; align-items:center; gap:8px; color:var(--muted); font-size:14px; margin:6px 0 12px; }
+    .crumbs a { color:var(--cyan); cursor:pointer; }
+    .crumbs .cur { color:var(--text); font-weight:700; }
   </style>
 </head>
 <body>
@@ -80,13 +89,28 @@
       </div>
 
       <div id="questions" class="panel active">
-        <div class="filters" id="subjects"></div>
-        <div class="filters" id="topics"></div>
-        <p class="meta" id="guestNote" style="display:none">You are trying a few sample questions as a guest. Nothing is saved. <a class="loginlink" href="/login.html?next=/olympiad.html">Login / Sign up</a> to unlock every part and earn points.</p>
-        <div class="meta" id="partInfo"></div>
-        <div class="bar" id="barWrap" style="display:none"><div id="bar"></div></div>
-        <p class="meta">Every question is shown only once. Answer <b>without using Hint or Description</b> to earn points. Finish a part to unlock a harder one.</p>
-        <div id="qbox"></div>
+        <!-- Step 1: choose a subject -->
+        <div id="stepSubjects">
+          <p class="meta">Choose a subject to start.</p>
+          <div class="cardgrid" id="subjectGrid"></div>
+        </div>
+
+        <!-- Step 2: choose a topic -->
+        <div id="stepTopics" style="display:none">
+          <div class="crumbs" id="crumbsTopics"></div>
+          <p class="meta">Choose a topic.</p>
+          <div class="cardgrid" id="topicGrid"></div>
+        </div>
+
+        <!-- Step 3: the questions -->
+        <div id="stepQuestions" style="display:none">
+          <div class="crumbs" id="crumbsQuestions"></div>
+          <p class="meta" id="guestNote" style="display:none">You are trying a few sample questions as a guest. Nothing is saved. <a class="loginlink" href="/login.html?next=/olympiad.html">Login / Sign up</a> to unlock every part and earn points.</p>
+          <div class="meta" id="partInfo"></div>
+          <div class="bar" id="barWrap" style="display:none"><div id="bar"></div></div>
+          <p class="meta">Every question is shown only once. Answer <b>without using Hint or Description</b> to earn points. Finish a part to unlock a harder one.</p>
+          <div id="qbox"></div>
+        </div>
       </div>
 
       <div id="board" class="panel">
@@ -150,43 +174,72 @@
       const t = e.target.closest(".tab");
       if (t) showPanel(t.getAttribute("data-panel"));
     };
-    // ---------- subjects and topics ----------
+    // ---------- subjects -> topics -> questions (3 steps, remembered in the address bar) ----------
     const SUBJECTS = {
       "Physics": ["Mechanics", "Electricity", "Optics", "Thermodynamics", "Modern Physics"],
       "Chemistry": ["Physical Chemistry", "Organic Chemistry", "Inorganic Chemistry"],
       "Mathematics": ["Algebra", "Calculus", "Geometry", "Number Theory"],
       "Biology": ["Cell Biology", "Genetics", "Human Physiology", "Ecology & Evolution"]
     };
+    const SUBJECT_INFO = {
+      "Physics": { icon: "⚛️", desc: "Mechanics, electricity, optics, heat and modern physics" },
+      "Chemistry": { icon: "⚗️", desc: "Physical, organic and inorganic chemistry" },
+      "Mathematics": { icon: "➗", desc: "Algebra, calculus, geometry and number theory" },
+      "Biology": { icon: "🧬", desc: "Cells, genetics, human body and ecology" }
+    };
     let subject = "Physics";
 
-    function renderSubjects() {
-      $("subjects").innerHTML = Object.keys(SUBJECTS).map(function (s) {
-        return '<button class="topic-btn' + (s === subject ? ' active' : '') + '" data-subject="' + esc(s) + '">' + esc(s) + '</button>';
-      }).join("");
+    function go(parts) { location.hash = parts.map(encodeURIComponent).join("/"); }
+    function showStep(step) {
+      $("stepSubjects").style.display = step === "subjects" ? "block" : "none";
+      $("stepTopics").style.display = step === "topics" ? "block" : "none";
+      $("stepQuestions").style.display = step === "questions" ? "block" : "none";
     }
-    function renderTopics() {
-      $("topics").innerHTML = SUBJECTS[subject].map(function (t) {
-        return '<button class="topic-btn' + (t === topic ? ' active' : '') + '" data-topic="' + esc(t) + '">' + esc(t) + '</button>';
-      }).join("");
+    function crumbHtml(items) {
+      return items.map(function (it) {
+        return it.hash !== undefined
+          ? '<a data-go="' + esc(it.hash) + '">' + esc(it.label) + '</a>'
+          : '<span class="cur">' + esc(it.label) + '</span>';
+      }).join("<span>›</span>");
     }
-    $("subjects").onclick = function (e) {
-      const b = e.target.closest("button[data-subject]");
-      if (!b) return;
-      subject = b.getAttribute("data-subject");
-      topic = SUBJECTS[subject][0];
-      renderSubjects();
-      renderTopics();
-      load();
-    };
-    $("topics").onclick = function (e) {
-      const b = e.target.closest("button[data-topic]");
-      if (!b) return;
-      topic = b.getAttribute("data-topic");
-      renderTopics();
-      load();
-    };
-    renderSubjects();
-    renderTopics();
+    function route() {
+      const parts = location.hash.replace(/^#/, "").split("/").filter(Boolean).map(function (x) {
+        try { return decodeURIComponent(x); } catch (e) { return x; }
+      });
+      const s = parts[0], t = parts[1];
+      if (s && SUBJECTS[s]) {
+        subject = s;
+        if (t && SUBJECTS[s].indexOf(t) !== -1) {
+          topic = t;
+          $("crumbsQuestions").innerHTML = crumbHtml([
+            { label: "Olympiad", hash: "" }, { label: s, hash: encodeURIComponent(s) }, { label: t }
+          ]);
+          showStep("questions");
+          load();
+          return;
+        }
+        $("crumbsTopics").innerHTML = crumbHtml([{ label: "Olympiad", hash: "" }, { label: s }]);
+        $("topicGrid").innerHTML = SUBJECTS[s].map(function (tp) {
+          return '<button type="button" class="pick" data-topic="' + esc(tp) + '"><b>' + esc(tp) + '</b><small>Tap to see the questions</small></button>';
+        }).join("");
+        showStep("topics");
+        return;
+      }
+      $("subjectGrid").innerHTML = Object.keys(SUBJECTS).map(function (k) {
+        return '<button type="button" class="pick" data-subject="' + esc(k) + '"><span class="ic">' + SUBJECT_INFO[k].icon + '</span><b>' +
+          esc(k) + '</b><small>' + esc(SUBJECT_INFO[k].desc) + '</small></button>';
+      }).join("");
+      showStep("subjects");
+    }
+    $("questions").addEventListener("click", function (e) {
+      const g = e.target.closest("[data-go]");
+      if (g) { location.hash = g.getAttribute("data-go"); return; }
+      const sBtn = e.target.closest("[data-subject]");
+      if (sBtn) { go([sBtn.getAttribute("data-subject")]); return; }
+      const tBtn = e.target.closest("[data-topic]");
+      if (tBtn) { go([subject, tBtn.getAttribute("data-topic")]); }
+    });
+    window.addEventListener("hashchange", route);
     $("refreshBoard").onclick = loadBoard;
 
     // ---------- questions ----------
@@ -335,7 +388,7 @@
         isLoggedIn = !!session;
         $("info").style.display = "none";
         $("app").style.display = "block";
-        load();
+        route();
       } catch (e) {
         $("info").textContent = "Error: " + (e.message || e);
       }
