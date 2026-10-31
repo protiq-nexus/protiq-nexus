@@ -132,28 +132,27 @@
       border-top: 1px solid rgba(255,255,255,0.06);
       padding: 20px; text-align: center; color: var(--muted); font-size: 12px;
     }
+
+    /* ===== Background animation ===== */
     .bg-anim {
       position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
     }
-    .bg-anim span {
-      position: absolute; border-radius: 50%;
-      background: rgba(95, 240, 220, 0.65);
-      box-shadow: 0 0 10px rgba(110, 182, 255, 0.45);
-      animation: floatUp linear infinite;
+    /* NEW: glowing aurora blobs that drift slowly */
+    .bg-anim .glow {
+      position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.35;
+      animation: drift 26s ease-in-out infinite alternate;
     }
-    .bg-anim span:nth-child(1) { left: 8%; top: 72%; width: 3px; height: 3px; animation-duration: 15s; }
-    .bg-anim span:nth-child(2) { left: 20%; top: 88%; width: 2px; height: 2px; animation-duration: 19s; animation-delay: 2s; }
-    .bg-anim span:nth-child(3) { left: 38%; top: 78%; width: 4px; height: 4px; animation-duration: 17s; animation-delay: 1s; }
-    .bg-anim span:nth-child(4) { left: 55%; top: 92%; width: 3px; height: 3px; animation-duration: 21s; animation-delay: 3s; }
-    .bg-anim span:nth-child(5) { left: 72%; top: 80%; width: 2px; height: 2px; animation-duration: 16s; animation-delay: 0.5s; }
-    .bg-anim span:nth-child(6) { left: 86%; top: 86%; width: 3px; height: 3px; animation-duration: 18s; animation-delay: 2.5s; }
-    .bg-anim span:nth-child(7) { left: 12%; top: 58%; width: 2px; height: 2px; animation-duration: 20s; animation-delay: 4s; }
-    .bg-anim span:nth-child(8) { left: 93%; top: 52%; width: 3px; height: 3px; animation-duration: 14s; animation-delay: 1.5s; }
-    @keyframes floatUp {
-      0% { transform: translateY(0) scale(1); opacity: 0; }
-      12% { opacity: 0.85; }
-      100% { transform: translateY(-105vh) scale(0.6); opacity: 0; }
+    .bg-anim .glow.g1 { width: 420px; height: 420px; left: -8%; top: 8%; background: #2a6df0; }
+    .bg-anim .glow.g2 { width: 380px; height: 380px; right: -6%; top: 38%; background: #19c2b2; animation-duration: 32s; animation-delay: -6s; }
+    .bg-anim .glow.g3 { width: 320px; height: 320px; left: 38%; bottom: -12%; background: #5b5bf0; opacity: 0.25; animation-duration: 38s; animation-delay: -12s; }
+    @keyframes drift {
+      0%   { transform: translate(0, 0) scale(1); }
+      50%  { transform: translate(40px, -30px) scale(1.12); }
+      100% { transform: translate(-30px, 36px) scale(0.95); }
     }
+    /* NEW: interactive particle network (drawn by the script below) */
+    .bg-anim canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
     .orbit-wrap {
       position: absolute; left: 50%; top: 12%;
       width: min(520px, 88vw); height: min(520px, 88vw);
@@ -184,6 +183,9 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     header, main, footer { position: relative; z-index: 1; }
+    @media (prefers-reduced-motion: reduce) {
+      .bg-anim .glow, .orbit { animation: none; }
+    }
     @media (max-width: 700px) {
       .benefits { grid-template-columns: 1fr; }
       .navlinks { gap: 10px; font-size: 12px; }
@@ -194,8 +196,10 @@
 </head>
 <body>
   <div class="bg-anim" aria-hidden="true">
-    <span></span><span></span><span></span><span></span>
-    <span></span><span></span><span></span><span></span>
+    <div class="glow g1"></div>
+    <div class="glow g2"></div>
+    <div class="glow g3"></div>
+    <canvas id="bgCanvas"></canvas>
     <div class="orbit-wrap">
       <div class="orbit"><i></i></div>
       <div class="orbit"><i></i></div>
@@ -265,6 +269,93 @@
   </footer>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+
+  <!-- NEW: particle network background (reacts to the mouse, pauses when the tab is hidden) -->
+  <script>
+    (function () {
+      var canvas = document.getElementById("bgCanvas");
+      if (!canvas || !canvas.getContext) return;
+      var ctx = canvas.getContext("2d");
+      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var w = 0, h = 0, pts = [], raf = null;
+      var mouse = { x: -9999, y: -9999 };
+      var LINK = 130, PUSH = 110;
+
+      function make() {
+        return {
+          x: Math.random() * w, y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 0.28, vy: (Math.random() - 0.5) * 0.28,
+          r: Math.random() * 1.5 + 0.7
+        };
+      }
+
+      function resize() {
+        w = window.innerWidth; h = window.innerHeight;
+        canvas.width = w * dpr; canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        var n = Math.round(Math.min(70, Math.max(24, (w * h) / 22000)));
+        while (pts.length < n) pts.push(make());
+        pts.length = n;
+        if (reduce) draw();
+      }
+
+      function step() {
+        for (var i = 0; i < pts.length; i++) {
+          var p = pts[i];
+          var dx = p.x - mouse.x, dy = p.y - mouse.y;
+          var d2 = dx * dx + dy * dy;
+          if (d2 < PUSH * PUSH && d2 > 0.01) {
+            var d = Math.sqrt(d2), f = (1 - d / PUSH) * 0.9;
+            p.x += (dx / d) * f; p.y += (dy / d) * f;
+          }
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < -10) p.x = w + 10; else if (p.x > w + 10) p.x = -10;
+          if (p.y < -10) p.y = h + 10; else if (p.y > h + 10) p.y = -10;
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+        for (var i = 0; i < pts.length; i++) {
+          var a = pts[i];
+          for (var j = i + 1; j < pts.length; j++) {
+            var b = pts[j];
+            var dx = a.x - b.x, dy = a.y - b.y;
+            var d2 = dx * dx + dy * dy;
+            if (d2 < LINK * LINK) {
+              var alpha = (1 - Math.sqrt(d2) / LINK) * 0.22;
+              ctx.strokeStyle = "rgba(95,240,220," + alpha.toFixed(3) + ")";
+              ctx.lineWidth = 1;
+              ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            }
+          }
+        }
+        for (var k = 0; k < pts.length; k++) {
+          var p = pts[k];
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(140,230,255,0.85)";
+          ctx.shadowColor = "rgba(95,240,220,0.9)";
+          ctx.shadowBlur = 8;
+          ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+      }
+
+      function loop() { step(); draw(); raf = requestAnimationFrame(loop); }
+      function start() { if (!raf && !reduce) raf = requestAnimationFrame(loop); }
+      function stop() { if (raf) { cancelAnimationFrame(raf); raf = null; } }
+
+      window.addEventListener("resize", resize);
+      window.addEventListener("mousemove", function (e) { mouse.x = e.clientX; mouse.y = e.clientY; });
+      window.addEventListener("mouseout", function () { mouse.x = -9999; mouse.y = -9999; });
+      document.addEventListener("visibilitychange", function () { document.hidden ? stop() : start(); });
+
+      resize();
+      if (reduce) draw(); else start();
+    })();
   </script>
 </body>
 </html>
