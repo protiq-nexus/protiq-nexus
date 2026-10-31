@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Friends | ProtiQ Nexus</title>
+  <link rel="icon" href="/logo.png" type="image/png">
+  <style>
+    :root {
+      --bg:#080d19; --panel:#101a2b; --text:#f2f6ff; --muted:#a1b0c8;
+      --cyan:#54ead5; --border:#24334a; --danger:#ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:Arial,sans-serif; }
+    a { color:inherit; text-decoration:none; }
+    header { border-bottom:1px solid var(--border); }
+    nav { max-width:900px; margin:auto; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:800; }
+    .brand img { width:36px; height:36px; border-radius:50%; }
+    .brand span { color:var(--cyan); }
+    .navlinks a { color:var(--muted); margin-left:12px; font-size:13px; }
+    .navlinks a.active { color:var(--cyan); }
+    main { max-width:900px; margin:auto; padding:24px 20px; }
+    h1 { margin:0 0 8px; }
+    .sub { color:var(--muted); margin-bottom:16px; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+    input {
+      flex:1; min-width:180px; padding:12px; border-radius:10px;
+      border:1px solid var(--border); background:#0a1120; color:var(--text);
+    }
+    .btn {
+      padding:10px 14px; border:0; border-radius:9px; cursor:pointer; font-weight:800;
+      background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b;
+    }
+    .btn2 { background:transparent; border:1px solid var(--border); color:var(--text); }
+    .card {
+      background:var(--panel); border:1px solid var(--border); border-radius:12px;
+      padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; gap:10px; align-items:center;
+    }
+    .muted { color:var(--muted); font-size:13px; }
+    .err { color:var(--danger); }
+    h2 { font-size:16px; margin:22px 0 10px; color:var(--cyan); }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a class="brand" href="/"><img src="/logo.png" alt=""> ProtiQ<span> Nexus</span></a>
+      <div class="navlinks">
+        <a href="/">Home</a>
+        <a href="/olympiad.html">Olympiad</a>
+        <a href="/friends.html" class="active">Friends</a>
+        <a href="/profile.html">Profile</a>
+      </div>
+    </nav>
+  </header>
+  <main>
+    <h1>Friends</h1>
+    <p class="sub">Search players, send requests, and connect.</p>
+    <div id="status" class="muted">Checking login...</div>
+
+    <div id="app" style="display:none">
+      <div class="row">
+        <input id="q" type="text" placeholder="Search name or email fragment">
+        <button class="btn" type="button" id="searchBtn">Search</button>
+      </div>
+      <div id="searchList"></div>
+
+      <h2>Requests</h2>
+      <div id="pendingList" class="muted">None</div>
+
+      <h2>Your friends</h2>
+      <div id="friendList" class="muted">None yet</div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const sb = window.supabase.createClient(
+      "https://dylkrvdnyefdeuxtchji.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
+    );
+    let userEmail = "";
+
+    async function apiGet(action, extra) {
+      let url = "/api/connect?email=" + encodeURIComponent(userEmail) + "&action=" + action;
+      if (extra) url += extra;
+      const res = await fetch(url);
+      return res.json();
+    }
+
+    async function apiPost(payload) {
+      const res = await fetch("/api/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.assign({ email: userEmail }, payload))
+      });
+      return res.json();
+    }
+
+    async function loadPending() {
+      const data = await apiGet("pending");
+      const box = document.getElementById("pendingList");
+      const reqs = data.requests || [];
+      if (!reqs.length) { box.innerHTML = "<span class='muted'>No pending requests</span>"; return; }
+      box.innerHTML = reqs.map(function (r) {
+        return '<div class="card"><div><b>' + r.display_name + '</b><div class="muted">' + (r.points || 0) + ' pts</div></div>' +
+          '<div><button class="btn" data-accept="' + r.from_key + '">Accept</button> ' +
+          '<button class="btn btn2" data-reject="' + r.from_key + '">Reject</button></div></div>';
+      }).join("");
+    }
+
+    async function loadFriends() {
+      const data = await apiGet("list");
+      const box = document.getElementById("friendList");
+      const friends = data.friends || [];
+      if (!friends.length) { box.innerHTML = "<span class='muted'>No friends yet</span>"; return; }
+      box.innerHTML = friends.map(function (f) {
+        return '<div class="card"><div><b>' + f.display_name + '</b><div class="muted">' + (f.points || 0) + ' pts</div></div></div>';
+      }).join("");
+    }
+
+    document.getElementById("searchBtn").onclick = async function () {
+      const q = document.getElementById("q").value.trim();
+      const box = document.getElementById("searchList");
+      box.innerHTML = "Searching...";
+      const data = await apiGet("search", "&q=" + encodeURIComponent(q));
+      const users = data.users || [];
+      if (!users.length) { box.innerHTML = "<span class='muted'>No users found (they need leaderboard activity)</span>"; return; }
+      box.innerHTML = users.map(function (u) {
+        return '<div class="card"><div><b>' + u.display_name + '</b><div class="muted">' + (u.points || 0) + ' pts</div></div>' +
+          '<button class="btn" data-request="' + u.key + '">Connect</button></div>';
+      }).join("");
+    };
+
+    document.body.onclick = async function (e) {
+      const t = e.target;
+      if (t.getAttribute("data-request")) {
+        const data = await apiPost({ action: "request", target: t.getAttribute("data-request") });
+        alert(data.message || data.error || "Done");
+      }
+      if (t.getAttribute("data-accept")) {
+        await apiPost({ action: "accept", target: t.getAttribute("data-accept") });
+        loadPending(); loadFriends();
+      }
+      if (t.getAttribute("data-reject")) {
+        await apiPost({ action: "reject", target: t.getAttribute("data-reject") });
+        loadPending();
+      }
+    };
+
+    (async function () {
+      const status = document.getElementById("status");
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+          status.textContent = "Login required...";
+          window.location.href = "/login.html";
+          return;
+        }
+        userEmail = session.user.email || "";
+        status.style.display = "none";
+        document.getElementById("app").style.display = "block";
+        loadPending();
+        loadFriends();
+      } catch (e) {
+        status.className = "err";
+        status.textContent = e.message || String(e);
+      }
+    })();
+  </script>
+</body>
+</html>
