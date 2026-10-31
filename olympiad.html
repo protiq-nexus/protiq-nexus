@@ -80,13 +80,8 @@
       </div>
 
       <div id="questions" class="panel active">
-        <div class="filters" id="topics">
-          <button class="topic-btn active" data-topic="Mechanics">Mechanics</button>
-          <button class="topic-btn" data-topic="Electricity">Electricity</button>
-          <button class="topic-btn" data-topic="Optics">Optics</button>
-          <button class="topic-btn" data-topic="Thermodynamics">Thermodynamics</button>
-          <button class="topic-btn" data-topic="Modern Physics">Modern Physics</button>
-        </div>
+        <div class="filters" id="subjects"></div>
+        <div class="filters" id="topics"></div>
         <p class="meta" id="guestNote" style="display:none">You are trying a few sample questions as a guest. Nothing is saved. <a class="loginlink" href="/login.html?next=/olympiad.html">Login / Sign up</a> to unlock every part and earn points.</p>
         <div class="meta" id="partInfo"></div>
         <div class="bar" id="barWrap" style="display:none"><div id="bar"></div></div>
@@ -155,13 +150,43 @@
       const t = e.target.closest(".tab");
       if (t) showPanel(t.getAttribute("data-panel"));
     };
-    $("topics").onclick = function (e) {
-      if (!e.target.classList.contains("topic-btn")) return;
-      document.querySelectorAll(".topic-btn").forEach(function (b) { b.classList.remove("active"); });
-      e.target.classList.add("active");
-      topic = e.target.getAttribute("data-topic");
+    // ---------- subjects and topics ----------
+    const SUBJECTS = {
+      "Physics": ["Mechanics", "Electricity", "Optics", "Thermodynamics", "Modern Physics"],
+      "Chemistry": ["Physical Chemistry", "Organic Chemistry", "Inorganic Chemistry"],
+      "Mathematics": ["Algebra", "Calculus", "Geometry", "Number Theory"],
+      "Biology": ["Cell Biology", "Genetics", "Human Physiology", "Ecology & Evolution"]
+    };
+    let subject = "Physics";
+
+    function renderSubjects() {
+      $("subjects").innerHTML = Object.keys(SUBJECTS).map(function (s) {
+        return '<button class="topic-btn' + (s === subject ? ' active' : '') + '" data-subject="' + esc(s) + '">' + esc(s) + '</button>';
+      }).join("");
+    }
+    function renderTopics() {
+      $("topics").innerHTML = SUBJECTS[subject].map(function (t) {
+        return '<button class="topic-btn' + (t === topic ? ' active' : '') + '" data-topic="' + esc(t) + '">' + esc(t) + '</button>';
+      }).join("");
+    }
+    $("subjects").onclick = function (e) {
+      const b = e.target.closest("button[data-subject]");
+      if (!b) return;
+      subject = b.getAttribute("data-subject");
+      topic = SUBJECTS[subject][0];
+      renderSubjects();
+      renderTopics();
       load();
     };
+    $("topics").onclick = function (e) {
+      const b = e.target.closest("button[data-topic]");
+      if (!b) return;
+      topic = b.getAttribute("data-topic");
+      renderTopics();
+      load();
+    };
+    renderSubjects();
+    renderTopics();
     $("refreshBoard").onclick = loadBoard;
 
     // ---------- questions ----------
@@ -187,6 +212,12 @@
         if (!res.ok) throw new Error(data.error || "Failed");
         $("guestNote").style.display = data.guest ? "block" : "none";
         updateInfo();
+        if (data.empty) {
+          box.innerHTML = '<div class="banner">Questions for this topic are coming soon. Please try another topic for now.</div>';
+          $("barWrap").style.display = "none";
+          $("partInfo").textContent = "";
+          return;
+        }
         if (data.finished || !data.questions.length) {
           box.innerHTML = '<div class="banner">You have completed every available question in this topic. New questions will be added soon!</div>';
           return;
