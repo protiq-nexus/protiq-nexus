@@ -11,7 +11,16 @@ const SUPABASE_URL = "https://dylkrvdnyefdeuxtchji.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4";
 
-const TOPICS = ["Mechanics", "Electricity", "Optics", "Thermodynamics", "Modern Physics"];
+const TOPICS = [
+  // Physics
+  "Mechanics", "Electricity", "Optics", "Thermodynamics", "Modern Physics",
+  // Chemistry
+  "Physical Chemistry", "Organic Chemistry", "Inorganic Chemistry",
+  // Mathematics
+  "Algebra", "Calculus", "Geometry", "Number Theory",
+  // Biology
+  "Cell Biology", "Genetics", "Human Physiology", "Ecology & Evolution"
+];
 const SET_SIZE = 10;     // questions in one part
 const GUEST_SAMPLE = 5;  // questions a guest can try (nothing is saved)
 
@@ -88,7 +97,18 @@ const TOPIC_DEFAULT_HINT = {
   Electricity: "Write the basic circuit or field formula first, then eliminate options.",
   Optics: "Decide if the idea is ray optics or wave optics, then apply the matching rule.",
   Thermodynamics: "State the process type (iso-T, adiabatic, cycle) before calculating.",
-  "Modern Physics": "Connect quanta, waves or nucleus ideas — avoid classical-only thinking."
+  "Modern Physics": "Connect quanta, waves or nucleus ideas — avoid classical-only thinking.",
+  "Physical Chemistry": "Write the balanced equation or the key formula (moles, pH, rate law) first, then substitute.",
+  "Organic Chemistry": "Identify the functional group and the reaction type before choosing the product.",
+  "Inorganic Chemistry": "Think about electron configuration, periodic trends and molecular shape (VSEPR).",
+  "Algebra": "Try to simplify with identities or Vieta formulas before calculating.",
+  "Calculus": "Recall the standard derivative, integral or limit rule that matches the form.",
+  "Geometry": "Draw the figure and mark the known lengths and angles first.",
+  "Number Theory": "Use divisibility rules, prime factorisation or modular arithmetic.",
+  "Cell Biology": "Link each structure to its function inside the cell.",
+  "Genetics": "Write the genotypes of the parents and use a Punnett square.",
+  "Human Physiology": "Trace the pathway of the organ or hormone step by step.",
+  "Ecology & Evolution": "Think about energy flow, populations and natural selection."
 };
 
 function makeHint(q) {
@@ -184,6 +204,17 @@ export async function onRequestGet({ request, env }) {
     if (!TOPICS.includes(topic)) return json({ error: "Unknown topic." }, 400);
 
     const user = await getUser(request);
+
+    // A topic with no questions yet: show "coming soon" and do not touch the user progress
+    const totalRow = await env.DB.prepare(
+      "SELECT COUNT(*) AS c FROM olympiad_questions WHERE topic = ?"
+    ).bind(topic).first();
+    if (!totalRow || !totalRow.c) {
+      return json({
+        success: true, empty: true, guest: !user, topic, part: 1, level: "Beginner",
+        set_size: SET_SIZE, done_in_part: 0, points_per_correct: pointsPerCorrect(1), questions: []
+      });
+    }
 
     // Guests: a small sample, nothing is saved
     if (!user) {
