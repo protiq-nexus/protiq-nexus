@@ -250,8 +250,10 @@
         $("barWrap").style.display = "none";
         return;
       }
-      $("partInfo").textContent = "Part " + data.part + " · " + data.level + " · " + data.done_in_part + "/" + data.set_size +
-        " done · +" + data.points_per_correct + " pts per correct answer without help · Your points: " + (data.my_points || 0);
+      $("partInfo").textContent = "Your level: " + data.level + " · This set: " + data.done_in_part + "/" + data.set_size +
+        " · +" + data.points_per_correct + " pts per correct answer without help" +
+        (data.accuracy !== null && data.accuracy !== undefined ? " · Accuracy: " + data.accuracy + "%" : "") +
+        " · Your points: " + (data.my_points || 0);
       $("barWrap").style.display = "block";
       $("bar").style.width = Math.min(100, (data.done_in_part / data.set_size) * 100) + "%";
     }
@@ -345,11 +347,18 @@
           data.my_points = (data.my_points || 0) + (r.earned || 0);
           updateInfo();
           if (r.set_done) {
-            result.innerHTML += '<div class="banner">Part complete! Part ' + r.next_part + ' (harder questions) is unlocked. ' +
-              '<button type="button" class="btn small" id="nextPartBtn">Start next part</button></div>';
+            const score = r.set_correct + "/" + r.set_size;
+            let msg;
+            if (r.level_change === "up") msg = "Excellent! You answered " + score + " correctly, so the next set will be harder.";
+            else if (r.level_change === "down") msg = "You answered " + score + ". Let us practise a little more at the " + esc(r.next_level) + " level.";
+            else msg = "You answered " + score + ". The next set has new questions at the " + esc(r.next_level) + " level.";
+            result.innerHTML += '<div class="banner">' + msg + ' <button type="button" class="btn small" id="nextPartBtn">Start next set</button></div>';
             $("nextPartBtn").onclick = load;
           } else if (r.finished) {
             result.innerHTML += '<div class="banner">You have completed every available question in this topic!</div>';
+          } else if (r.reload) {
+            result.innerHTML += '<div class="banner">No more questions are left at this level. <button type="button" class="btn small" id="nextPartBtn">Continue</button></div>';
+            $("nextPartBtn").onclick = load;
           }
         }
       } catch (err) {
