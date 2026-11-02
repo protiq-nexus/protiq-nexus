@@ -22,7 +22,10 @@ const TOPICS = [
   "Cell Biology", "Genetics", "Human Physiology", "Ecology & Evolution"
 ];
 const SET_SIZE = 10;     // questions in one set
-const LEVELS = ["Beginner", "Intermediate", "Advanced"];
+const BEGINNER_LEVELS = 3;      // Level 1, 2, 3
+const INTERMEDIATE_LEVELS = 3;  // Level 4, 5, 6
+const PER_LEVEL = 10;           // every 10 questions of a stage make one level
+// From Level 7 upward the Advanced levels never end: every extra 10 Advanced questions add one more level.
 // Adaptive difficulty: after every set of SET_SIZE answers
 //   8 or more correct  -> harder questions
 //   5 to 7 correct     -> same level, new questions
@@ -54,17 +57,14 @@ async function getUser(request) {
   }
 }
 
-function levelForPart(part) {
-  if (part <= 1) return "Beginner";
-  if (part === 2) return "Intermediate";
+function levelForPart(L) {
+  if (L <= BEGINNER_LEVELS) return "Beginner";
+  if (L <= BEGINNER_LEVELS + INTERMEDIATE_LEVELS) return "Intermediate";
   return "Advanced";
 }
 
-function pointsPerCorrect(part) {
-  if (part <= 1) return 10;
-  if (part === 2) return 20;
-  if (part === 3) return 30;
-  return 30 + (part - 3) * 10;
+function pointsPerCorrect(L) {
+  return 10 + 5 * (L - 1); // Level 1 = 10 points, Level 7 = 40 points, and so on
 }
 
 // ---------- hints (same texts as before) ----------
@@ -184,10 +184,6 @@ async function doneInPart(env, email, topic, part) {
   return row ? row.c : 0;
 }
 
-function partForLevel(level) {
-  return Math.max(1, LEVELS.indexOf(level) + 1);
-}
-
 async function doneInTopic(env, email, topic) {
   const row = await env.DB.prepare(
     "SELECT COUNT(*) AS c FROM user_answers WHERE user_email = ? AND topic = ? AND status = 'done'"
@@ -203,14 +199,29 @@ async function remainingTopicCount(env, email, topic) {
   return row ? row.c : 0;
 }
 
-async function nextRows(env, email, topic, level, limit) {
+// Every question gets a difficulty number (its level): Beginner 1-3, Intermediate 4-6, Advanced 7, 8, 9, ...
+const DIFF_SQL =
+  "WITH r AS (SELECT id, topic, level, question, options, correct_answer, explanation, " +
+  "ROW_NUMBER() OVER (PARTITION BY level ORDER BY id) AS rn FROM olympiad_questions WHERE topic = ?1), " +
+  "d AS (SELECT *, CASE level " +
+  "WHEN 'Beginner' THEN MIN(1 + (rn - 1) / " + PER_LEVEL + ", " + BEGINNER_LEVELS + ") " +
+  "WHEN 'Intermediate' THEN " + BEGINNER_LEVELS + " + MIN(1 + (rn - 1) / " + PER_LEVEL + ", " + INTERMEDIATE_LEVELS + ") " +
+  "ELSE " + (BEGINNER_LEVELS + INTERMEDIATE_LEVELS) + " + 1 + (rn - 1) / " + PER_LEVEL + " END AS diff FROM r) ";
+
+// The unanswered questions closest to the user level (new questions only, never a repeat)
+async function nextRows(env, email, topic, L, limit) {
   const res = await env.DB.prepare(
-    "SELECT id, topic, level, question, options FROM olympiad_questions q " +
-      "WHERE q.topic = ? AND q.level = ? " +
-      "AND q.id NOT IN (SELECT question_id FROM user_answers WHERE user_email = ? AND status = 'done') " +
-      "ORDER BY q.id LIMIT ?"
-  ).bind(topic, level, email, Math.max(1, limit)).all();
+    DIFF_SQL +
+      "SELECT id, topic, level, question, options, diff FROM d " +
+      "WHERE id NOT IN (SELECT question_id FROM user_answers WHERE user_email = ?2 AND status = 'done') " +
+      "ORDER BY ABS(diff - ?3), diff, id LIMIT ?4"
+  ).bind(topic, email, L, Math.max(1, limit)).all();
   return res.results || [];
+}
+
+async function maxDifficulty(env, topic) {
+  const row = await env.DB.prepare(DIFF_SQL + "SELECT MAX(diff) AS m FROM d").bind(topic).first();
+  return row && row.m ? row.m : 1;
 }
 
 function publicQuestion(q) {
@@ -218,6 +229,7 @@ function publicQuestion(q) {
     id: q.id,
     topic: q.topic,
     level: q.level,
+    difficulty: q.diff || null,
     question: q.question,
     options: shuffle(parseOptions(q.options))
   };
@@ -269,29 +281,11 @@ export async function onRequestGet({ request, env }) {
       });
     }
 
-    let part = await getPart(env, user.email, topic);
-    let level = levelForPart(part);
+    const part = await getPart(env, user.email, topic); // the user level number
+    const level = levelForPart(part);
     const totalDone = await doneInTopic(env, user.email, topic);
     const doneInSet = totalDone % SET_SIZE;
-    let rows = await nextRows(env, user.email, topic, level, SET_SIZE - doneInSet);
-
-    // Nothing left at this level: use the closest level that still has unanswered questions
-    if (rows.length === 0) {
-      const idx = LEVELS.indexOf(level);
-      const order = LEVELS.map((l, i) => ({ l, d: Math.abs(i - idx) + (i < idx ? 0.5 : 0) }))
-        .filter((o) => o.l !== level)
-        .sort((a, b) => a.d - b.d);
-      for (const o of order) {
-        const more = await nextRows(env, user.email, topic, o.l, SET_SIZE - doneInSet);
-        if (more.length) {
-          rows = more;
-          level = o.l;
-          part = partForLevel(o.l);
-          await setPart(env, user.email, topic, part);
-          break;
-        }
-      }
-    }
+    const rows = await nextRows(env, user.email, topic, part, SET_SIZE - doneInSet);
 
     const lb = await env.DB.prepare(
       "SELECT total_points FROM leaderboard WHERE user_email = ?"
@@ -362,14 +356,20 @@ export async function onRequestPost({ request, env }) {
     // ----- logged-in users -----
     const email = user.email;
     const part = await getPart(env, email, q.topic);
-    if (q.level !== levelForPart(part)) {
-      return json({ error: "This question is not in your current part." }, 403);
-    }
 
     const row = await env.DB.prepare(
       "SELECT status, used_hint, used_description FROM user_answers WHERE user_email = ? AND question_id = ?"
     ).bind(email, q.id).first();
     const alreadyDone = row && row.status === "done";
+
+    // Only the questions currently offered to this user can be hinted or answered
+    if (!alreadyDone) {
+      const doneNow = await doneInTopic(env, email, q.topic);
+      const cand = await nextRows(env, email, q.topic, part, SET_SIZE - (doneNow % SET_SIZE));
+      if (!cand.some((c) => c.id === q.id)) {
+        return json({ error: "This question is not in your current set." }, 403);
+      }
+    }
 
     if (action === "hint" || action === "describe") {
       if (!alreadyDone) {
@@ -426,7 +426,6 @@ export async function onRequestPost({ request, env }) {
     const totalDone = await doneInTopic(env, email, q.topic);
     const doneInSet = totalDone % SET_SIZE === 0 ? SET_SIZE : totalDone % SET_SIZE;
     const remainingTopic = await remainingTopicCount(env, email, q.topic);
-    const remainingLevel = await remainingCount(env, email, q.topic, q.level);
     let setDone = false;
     let finished = false;
     let nextPart = part;
@@ -443,15 +442,16 @@ export async function onRequestPost({ request, env }) {
       ).bind(email, q.topic, SET_SIZE).first();
       setCorrect = last ? last.c : 0;
       if (setCorrect >= 8) {
-        nextPart = part + 1;
-        levelChange = "up";
+        const top = await maxDifficulty(env, q.topic);
+        nextPart = Math.min(part + 1, Math.max(top, part));
+        levelChange = nextPart > part ? "up" : "same";
       } else if (setCorrect < 5) {
         nextPart = Math.max(1, part - 1);
         levelChange = nextPart < part ? "down" : "same";
       }
       if (nextPart !== part) await setPart(env, email, q.topic, nextPart);
     }
-    const reload = !setDone && !finished && remainingLevel === 0;
+    const reload = false;
 
     return json({
       success: true,
