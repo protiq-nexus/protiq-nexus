@@ -250,7 +250,7 @@
         $("barWrap").style.display = "none";
         return;
       }
-      $("partInfo").textContent = "Your level: " + data.level + " · This set: " + data.done_in_part + "/" + data.set_size +
+      $("partInfo").textContent = "Level " + data.part + " (" + data.level + ") · This set: " + data.done_in_part + "/" + data.set_size +
         " · +" + data.points_per_correct + " pts per correct answer without help" +
         (data.accuracy !== null && data.accuracy !== undefined ? " · Accuracy: " + data.accuracy + "%" : "") +
         " · Your points: " + (data.my_points || 0);
@@ -282,7 +282,7 @@
             return '<div class="option" data-opt="' + encodeURIComponent(o) + '">' + esc(o) + '</div>';
           }).join("");
           return '<div class="q-card" data-id="' + q.id + '">' +
-            '<div><span class="tag">' + esc(q.topic) + '</span><span class="tag">' + esc(q.level) + '</span></div>' +
+            '<div><span class="tag">' + esc(q.topic) + '</span><span class="tag">Level ' + esc(q.difficulty || "") + '</span></div>' +
             '<p><b>' + (i + 1) + '.</b> ' + esc(q.question) + '</p>' + opts +
             '<div class="helpbar"><button type="button" class="btn btn2 small" data-act="hint">Hint</button>' +
             '<button type="button" class="btn btn2 small" data-act="describe">Show description</button></div>' +
@@ -349,9 +349,9 @@
           if (r.set_done) {
             const score = r.set_correct + "/" + r.set_size;
             let msg;
-            if (r.level_change === "up") msg = "Excellent! You answered " + score + " correctly, so the next set will be harder.";
-            else if (r.level_change === "down") msg = "You answered " + score + ". Let us practise a little more at the " + esc(r.next_level) + " level.";
-            else msg = "You answered " + score + ". The next set has new questions at the " + esc(r.next_level) + " level.";
+            if (r.level_change === "up") msg = "Excellent! You answered " + score + " correctly, so the next set will be harder (Level " + r.next_part + ").";
+            else if (r.level_change === "down") msg = "You answered " + score + ". Let us practise a little more at Level " + r.next_part + ".";
+            else msg = "You answered " + score + ". The next set has new questions at Level " + r.next_part + ".";
             result.innerHTML += '<div class="banner">' + msg + ' <button type="button" class="btn small" id="nextPartBtn">Start next set</button></div>';
             $("nextPartBtn").onclick = load;
           } else if (r.finished) {
