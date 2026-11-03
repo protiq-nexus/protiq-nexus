@@ -111,6 +111,14 @@
         }
         if (!res.ok) throw new Error(data.error || "Failed");
         box.innerHTML = formatAI(data.answer);
+        // Friendly reminder for guests who keep asking questions
+        if (!isLoggedIn) {
+          try {
+            const n = (parseInt(localStorage.getItem("pq_ai") || "0", 10) || 0) + 1;
+            localStorage.setItem("pq_ai", String(n));
+            if (n >= 3 && window.pqNudge) window.pqNudge("ai");
+          } catch (e) {}
+        }
       } catch (e) {
         box.innerHTML = "<p>Error: " + esc(e.message || e) + "</p>"; // CHANGED: escaped
       }
@@ -137,5 +145,6 @@
       }
     })();
   </script>
+  <script src="/nudge.js" defer></script>
 </body>
 </html>
