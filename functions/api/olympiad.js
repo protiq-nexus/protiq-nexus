@@ -30,7 +30,6 @@ const PER_LEVEL = 10;           // every 10 questions of a stage make one level
 //   8 or more correct  -> harder questions
 //   5 to 7 correct     -> same level, new questions
 //   fewer than 5       -> a little easier
-const GUEST_SAMPLE = 5;  // questions a guest can try (nothing is saved)
 
 function json(data, status) {
   return Response.json(data, {
@@ -55,6 +54,85 @@ async function getUser(request) {
   } catch (e) {
     return null;
   }
+}
+
+// Guests get a random id from their browser, so their progress is saved on that device
+const GUEST_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const GUEST_DAILY_ANSWERS = 150; // answers per IP address per day for guests
+
+async function getActor(request) {
+  const user = await getUser(request);
+  if (user) return { id: user.id, email: user.email, guest: false };
+  const gid = (request.headers.get("X-Guest-Id") || "").trim().toLowerCase();
+  if (GUEST_ID_RE.test(gid)) return { id: "g-" + gid, email: "guest:" + gid, guest: true };
+  return null;
+}
+
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Daily counter (uses the ai_usage table). It never breaks the quiz if the table is missing.
+async function bumpDaily(env, id) {
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    const row = await env.DB.prepare(
+      "INSERT INTO ai_usage (id, day, count) VALUES (?1, ?2, 1) " +
+        "ON CONFLICT(id, day) DO UPDATE SET count = count + 1 RETURNING count"
+    ).bind(id, day).first();
+    return row ? row.count : 0;
+  } catch (e) {
+    console.error("ai_usage table problem:", e);
+    return 0;
+  }
+}
+
+// When a guest signs up, the guest progress is moved into the new account
+async function claimGuest(request, env, body) {
+  const user = await getUser(request);
+  if (!user) return json({ error: "Please login first." }, 401);
+  const gid = String(body.guest_id || "").trim().toLowerCase();
+  if (!GUEST_ID_RE.test(gid)) return json({ error: "Bad guest id." }, 400);
+  const guestEmail = "guest:" + gid;
+  const email = user.email;
+
+  const moved = await env.DB.prepare(
+    "SELECT topic, COALESCE(SUM(is_correct), 0) AS c, COUNT(*) AS n, COALESCE(SUM(points), 0) AS p " +
+      "FROM user_answers g WHERE g.user_email = ? AND g.status = 'done' " +
+      "AND g.question_id NOT IN (SELECT question_id FROM user_answers WHERE user_email = ? AND status = 'done') " +
+      "GROUP BY topic"
+  ).bind(guestEmail, email).all();
+  const gp = await env.DB.prepare("SELECT topic, part FROM user_progress WHERE user_email = ?").bind(guestEmail).all();
+  const partOf = {};
+  for (const r of gp.results || []) partOf[r.topic] = r.part;
+
+  let totalPoints = 0, totalAnswers = 0;
+  for (const r of moved.results || []) {
+    totalPoints += r.p; totalAnswers += r.n;
+    await env.DB.prepare(
+      "INSERT INTO user_progress (user_email, topic, part, correct_count, total_attempted, points, updated_at) " +
+        "VALUES (?, ?, ?, ?, ?, ?, datetime('now')) " +
+        "ON CONFLICT(user_email, topic) DO UPDATE SET part = MAX(user_progress.part, excluded.part), " +
+        "correct_count = user_progress.correct_count + excluded.correct_count, " +
+        "total_attempted = user_progress.total_attempted + excluded.total_attempted, " +
+        "points = user_progress.points + excluded.points, updated_at = datetime('now')"
+    ).bind(email, r.topic, partOf[r.topic] || 1, r.c, r.n, r.p).run();
+  }
+  await env.DB.prepare(
+    "INSERT OR IGNORE INTO user_answers (user_email, question_id, topic, part, status, used_hint, used_description, is_correct, points, answered_at) " +
+      "SELECT ?, question_id, topic, part, status, used_hint, used_description, is_correct, points, answered_at " +
+      "FROM user_answers WHERE user_email = ?"
+  ).bind(email, guestEmail).run();
+  await env.DB.prepare("DELETE FROM user_answers WHERE user_email = ?").bind(guestEmail).run();
+  await env.DB.prepare("DELETE FROM user_progress WHERE user_email = ?").bind(guestEmail).run();
+  if (totalPoints > 0) {
+    await env.DB.prepare(
+      "INSERT INTO leaderboard (user_email, display_name, total_points, updated_at) VALUES (?, NULL, ?, datetime('now')) " +
+        "ON CONFLICT(user_email) DO UPDATE SET total_points = leaderboard.total_points + excluded.total_points, updated_at = datetime('now')"
+    ).bind(email, totalPoints).run();
+  }
+  return json({ success: true, moved: totalAnswers, points: totalPoints });
 }
 
 function levelForPart(L) {
@@ -235,13 +313,6 @@ function publicQuestion(q) {
   };
 }
 
-async function guestSampleIds(env, topic) {
-  const res = await env.DB.prepare(
-    "SELECT id FROM olympiad_questions WHERE topic = ? AND level = 'Beginner' ORDER BY id LIMIT ?"
-  ).bind(topic, GUEST_SAMPLE).all();
-  return (res.results || []).map((r) => r.id);
-}
-
 // ---------------- GET: the questions of the current part ----------------
 export async function onRequestGet({ request, env }) {
   try {
@@ -249,7 +320,8 @@ export async function onRequestGet({ request, env }) {
     const topic = url.searchParams.get("topic") || "Mechanics";
     if (!TOPICS.includes(topic)) return json({ error: "Unknown topic." }, 400);
 
-    const user = await getUser(request);
+    const user = await getActor(request);
+    if (!user) return json({ error: "Please reload the page." }, 400);
 
     // A topic with no questions yet: show "coming soon" and do not touch the user progress
     const totalRow = await env.DB.prepare(
@@ -257,27 +329,8 @@ export async function onRequestGet({ request, env }) {
     ).bind(topic).first();
     if (!totalRow || !totalRow.c) {
       return json({
-        success: true, empty: true, guest: !user, topic, part: 1, level: "Beginner",
+        success: true, empty: true, guest: user.guest, topic, part: 1, level: "Beginner",
         set_size: SET_SIZE, done_in_part: 0, points_per_correct: pointsPerCorrect(1), questions: []
-      });
-    }
-
-    // Guests: a small sample, nothing is saved
-    if (!user) {
-      const res = await env.DB.prepare(
-        "SELECT id, topic, level, question, options FROM olympiad_questions " +
-          "WHERE topic = ? AND level = 'Beginner' ORDER BY id LIMIT ?"
-      ).bind(topic, GUEST_SAMPLE).all();
-      return json({
-        success: true,
-        guest: true,
-        topic,
-        part: 1,
-        level: "Beginner",
-        set_size: GUEST_SAMPLE,
-        done_in_part: 0,
-        points_per_correct: pointsPerCorrect(1),
-        questions: (res.results || []).map(publicQuestion)
       });
     }
 
@@ -287,8 +340,8 @@ export async function onRequestGet({ request, env }) {
     const doneInSet = totalDone % SET_SIZE;
     const rows = await nextRows(env, user.email, topic, part, SET_SIZE - doneInSet);
 
-    const lb = await env.DB.prepare(
-      "SELECT total_points FROM leaderboard WHERE user_email = ?"
+    const pts = await env.DB.prepare(
+      "SELECT COALESCE(SUM(points), 0) AS p FROM user_progress WHERE user_email = ?"
     ).bind(user.email).first();
     const st = await env.DB.prepare(
       "SELECT correct_count, total_attempted FROM user_progress WHERE user_email = ? AND topic = ?"
@@ -298,14 +351,14 @@ export async function onRequestGet({ request, env }) {
 
     return json({
       success: true,
-      guest: false,
+      guest: user.guest,
       topic,
       part,
       level,
       set_size: SET_SIZE,
       done_in_part: doneInSet,
       points_per_correct: pointsPerCorrect(part),
-      my_points: lb ? lb.total_points || 0 : 0,
+      my_points: pts ? pts.p || 0 : 0,
       answered: attempted,
       accuracy,
       finished: rows.length === 0,
@@ -321,6 +374,7 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestPost({ request, env }) {
   try {
     const body = await request.json();
+    if (String(body.action || "") === "claim") return await claimGuest(request, env, body);
     const action = String(body.action || "");
     const questionId = parseInt(body.question_id, 10);
     if (!["hint", "describe", "answer"].includes(action) || !Number.isFinite(questionId)) {
@@ -332,28 +386,9 @@ export async function onRequestPost({ request, env }) {
     ).bind(questionId).first();
     if (!q) return json({ error: "Question not found." }, 404);
 
-    const user = await getUser(request);
+    const user = await getActor(request);
+    if (!user) return json({ error: "Please reload the page." }, 400);
 
-    // ----- guests: only the sample questions, nothing is saved -----
-    if (!user) {
-      const ids = await guestSampleIds(env, q.topic);
-      if (!ids.includes(q.id)) {
-        return json({ error: "Please login to continue with more questions." }, 401);
-      }
-      if (action === "hint") return json({ hint: makeHint(q) });
-      if (action === "describe") return json({ description: q.explanation || "No description available." });
-      const correct = String(body.answer || "") === q.correct_answer;
-      return json({
-        success: true,
-        guest: true,
-        correct,
-        correct_answer: q.correct_answer,
-        explanation: q.explanation || "",
-        earned: 0
-      });
-    }
-
-    // ----- logged-in users -----
     const email = user.email;
     const part = await getPart(env, email, q.topic);
 
@@ -388,6 +423,15 @@ export async function onRequestPost({ request, env }) {
     // ----- answer -----
     if (alreadyDone) return json({ error: "You already answered this question." }, 409);
 
+    // Guests can practise a lot, but with a daily limit per IP address (sign up is free and has no such limit)
+    if (user.guest) {
+      const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+      const used = await bumpDaily(env, "go:" + (await sha256Hex(ip)));
+      if (used > GUEST_DAILY_ANSWERS) {
+        return json({ error: "You have reached today's limit for guest practice. Please sign up (it is free) to continue.", signup: true }, 429);
+      }
+    }
+
     const correct = String(body.answer || "") === q.correct_answer;
     const helpUsed = !!(row && (row.used_hint || row.used_description));
     const earned = correct && !helpUsed ? pointsPerCorrect(part) : 0;
@@ -413,7 +457,7 @@ export async function onRequestPost({ request, env }) {
         "points = user_progress.points + excluded.points, updated_at = datetime('now')"
     ).bind(email, q.topic, part, correct ? 1 : 0, earned).run();
 
-    if (earned > 0) {
+    if (earned > 0 && !user.guest) { // only real accounts appear on the leaderboard
       await env.DB.prepare(
         "INSERT INTO leaderboard (user_email, display_name, total_points, updated_at) " +
           "VALUES (?, NULL, ?, datetime('now')) " +
