@@ -105,7 +105,7 @@
         <!-- Step 3: the questions -->
         <div id="stepQuestions" style="display:none">
           <div class="crumbs" id="crumbsQuestions"></div>
-          <p class="meta" id="guestNote" style="display:none">You are trying a few sample questions as a guest. Nothing is saved. <a class="loginlink" href="/login.html?next=/olympiad.html">Login / Sign up</a> to unlock every part and earn points.</p>
+          <p class="meta" id="guestNote" style="display:none">You are practising as a guest. Your progress is saved on this device. <a class="loginlink" href="/login.html?next=/olympiad.html">Sign up free</a> to keep it on every device, move it to your account and join the leaderboard.</p>
           <div class="meta" id="partInfo"></div>
           <div class="bar" id="barWrap" style="display:none"><div id="bar"></div></div>
           <p class="meta">Every question is shown only once. Answer <b>without using Hint or Description</b> to earn points. Finish a part to unlock a harder one.</p>
@@ -138,11 +138,24 @@
         return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
       });
     }
+    // A guest gets a random id stored in this browser, so the progress is remembered here
+    function guestId() {
+      try {
+        let g = localStorage.getItem("pq_guest");
+        if (!g) {
+          g = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+            : "xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx".replace(/x/g, function () { return Math.floor(Math.random() * 16).toString(16); });
+          localStorage.setItem("pq_guest", g);
+        }
+        return g;
+      } catch (e) { return ""; }
+    }
     async function authHeaders(extra) {
       const h = extra || {};
       try {
         const r = await sb.auth.getSession();
         if (r.data.session) h["Authorization"] = "Bearer " + r.data.session.access_token;
+        else { const g = guestId(); if (g) h["X-Guest-Id"] = g; }
       } catch (e) {}
       return h;
     }
@@ -158,7 +171,7 @@
         body: JSON.stringify(body)
       });
       const j = await readJson(res);
-      if (!res.ok) throw new Error(j.error || "Failed");
+      if (!res.ok) { const er = new Error(j.error || "Failed"); er.signup = !!j.signup; throw er; }
       return j;
     }
 
@@ -245,11 +258,6 @@
     // ---------- questions ----------
     function updateInfo() {
       if (!data) return;
-      if (data.guest) {
-        $("partInfo").textContent = "Sample · Beginner · " + data.questions.length + " questions · +" + data.points_per_correct + " pts per correct answer after login";
-        $("barWrap").style.display = "none";
-        return;
-      }
       $("partInfo").textContent = "Level " + data.part + " (" + data.level + ") · This set: " + data.done_in_part + "/" + data.set_size +
         " · +" + data.points_per_correct + " pts per correct answer without help" +
         (data.accuracy !== null && data.accuracy !== undefined ? " · Accuracy: " + data.accuracy + "%" : "") +
@@ -316,7 +324,7 @@
         try {
           const r = await post({ action: act, question_id: id });
           out.textContent = (act === "hint" ? "Hint: " + r.hint : "Description: " + r.description) +
-            (data.guest ? "" : "\n(No points for this question now.)");
+            "\n(No points for this question now.)";
         } catch (err) { out.textContent = err.message || String(err); }
         return;
       }
@@ -337,12 +345,18 @@
         });
         let line;
         if (r.correct && r.earned > 0) line = '<span class="good">Correct! +' + r.earned + ' points</span>';
-        else if (r.correct && data.guest) line = '<span class="good">Correct!</span> <a class="loginlink" href="/login.html?next=/olympiad.html">Login</a> to earn points.';
         else if (r.correct) line = '<span class="good">Correct</span> — no points because you used a hint or description.';
         else line = '<span class="bad">Wrong.</span> Correct answer: ' + esc(r.correct_answer);
         result.innerHTML = line + (r.explanation ? '<div class="expl">' + esc(r.explanation) + '</div>' : '');
 
-        if (!data.guest) {
+        {
+          if (data.guest) {
+            try {
+              const n = (parseInt(localStorage.getItem("pq_answers") || "0", 10) || 0) + 1;
+              localStorage.setItem("pq_answers", String(n));
+              if (n >= 15 && window.pqNudge) window.pqNudge("answers");
+            } catch (e) {}
+          }
           data.done_in_part = r.done_in_part;
           data.my_points = (data.my_points || 0) + (r.earned || 0);
           updateInfo();
@@ -363,7 +377,8 @@
         }
       } catch (err) {
         btn.disabled = false;
-        result.innerHTML = '<span class="bad">' + esc(err.message || err) + '</span>';
+        result.innerHTML = '<span class="bad">' + esc(err.message || err) + '</span>' +
+          (err.signup ? ' <a class="loginlink" href="/login.html?next=/olympiad.html">Sign up free</a>' : '');
       }
     };
 
@@ -397,11 +412,23 @@
         isLoggedIn = !!session;
         $("info").style.display = "none";
         $("app").style.display = "block";
+        // After sign up or login, move the guest progress of this browser into the account
+        if (isLoggedIn) {
+          try {
+            const gid = localStorage.getItem("pq_guest");
+            if (gid) {
+              await post({ action: "claim", guest_id: gid });
+              localStorage.removeItem("pq_guest");
+              localStorage.removeItem("pq_answers");
+            }
+          } catch (e) {}
+        }
         route();
       } catch (e) {
         $("info").textContent = "Error: " + (e.message || e);
       }
     })();
   </script>
+  <script src="/nudge.js" defer></script>
 </body>
 </html>
