@@ -14,7 +14,7 @@
     body { margin:0; background:var(--bg); color:var(--text); font-family:Arial,sans-serif; }
     a { color:inherit; text-decoration:none; }
     header { border-bottom:1px solid var(--border); }
-    nav { max-width:900px; margin:auto; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; }
+    nav { max-width:900px; margin:auto; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
     .brand { display:flex; align-items:center; gap:10px; font-weight:800; }
     .brand img { width:36px; height:36px; border-radius:50%; }
     .brand span { color:var(--cyan); }
@@ -23,7 +23,7 @@
     main { max-width:900px; margin:auto; padding:24px 20px; }
     h1 { margin:0 0 8px; }
     .sub { color:var(--muted); margin-bottom:16px; }
-    .row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
     input {
       flex:1; min-width:180px; padding:12px; border-radius:10px;
       border:1px solid var(--border); background:#0a1120; color:var(--text);
@@ -32,6 +32,7 @@
       padding:10px 14px; border:0; border-radius:9px; cursor:pointer; font-weight:800;
       background:linear-gradient(100deg,#347cf0,#24b8b0); color:#06101b;
     }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
     .btn2 { background:transparent; border:1px solid var(--border); color:var(--text); }
     .card {
       background:var(--panel); border:1px solid var(--border); border-radius:12px;
@@ -39,7 +40,10 @@
     }
     .muted { color:var(--muted); font-size:13px; }
     .err { color:var(--danger); }
+    .ok { color:var(--cyan); }
     h2 { font-size:16px; margin:22px 0 10px; color:var(--cyan); }
+    #msg { min-height:20px; margin:6px 0 10px; font-size:14px; }
+    .tag { color:var(--muted); font-size:13px; border:1px solid var(--border); border-radius:999px; padding:6px 12px; }
   </style>
 </head>
 <body>
@@ -49,21 +53,25 @@
       <div class="navlinks">
         <a href="/">Home</a>
         <a href="/olympiad.html">Olympiad</a>
+        <a href="/leaderboard.html">Leaderboard</a>
         <a href="/friends.html" class="active">Friends</a>
+        <a href="/research.html">Research</a>
+        <a href="/ai.html">AI</a>
         <a href="/profile.html">Profile</a>
       </div>
     </nav>
   </header>
   <main>
     <h1>Friends</h1>
-    <p class="sub">Search players, send requests, and connect.</p>
+    <p class="sub">Search players by name, send requests, and connect. Players who have not chosen a name appear as Player #1234.</p>
     <div id="status" class="muted">Checking login...</div>
 
     <div id="app" style="display:none">
       <div class="row">
-        <input id="q" type="text" placeholder="Search name or email fragment">
+        <input id="q" type="text" placeholder="Search by player name (at least 2 letters)" maxlength="60">
         <button class="btn" type="button" id="searchBtn">Search</button>
       </div>
+      <div id="msg"></div>
       <div id="searchList"></div>
 
       <h2>Requests</h2>
@@ -80,87 +88,132 @@
       "https://dylkrvdnyefdeuxtchji.supabase.co",
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bGtydmRueWVmZGV1eHRjaGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODgxNjEsImV4cCI6MjEwODE2NDE2MX0.cs0XsVKkoo61FwJMitjSGx3vdmYsfWpqovl7kTfgAp4"
     );
-    let userEmail = "";
 
-    async function apiGet(action, extra) {
-      let url = "/api/connect?email=" + encodeURIComponent(userEmail) + "&action=" + action;
-      if (extra) url += extra;
-      const res = await fetch(url);
-      return res.json();
+    function $(id) { return document.getElementById(id); }
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    function say(text, isErr) {
+      const m = $("msg");
+      m.textContent = text || "";
+      m.className = isErr ? "err" : "ok";
     }
 
+    // the login token tells the server who you are (the page never sends an email)
+    async function authHeaders(extra) {
+      const h = extra || {};
+      const r = await sb.auth.getSession();
+      if (r.data.session) h["Authorization"] = "Bearer " + r.data.session.access_token;
+      return h;
+    }
+    async function readJson(res) {
+      try { return await res.json(); }
+      catch (e) { return { error: "The server is not ready. Please try again in a moment." }; }
+    }
+    async function apiGet(action, extra) {
+      const res = await fetch("/api/connect?action=" + action + (extra || ""), { headers: await authHeaders() });
+      const j = await readJson(res);
+      if (!res.ok) throw new Error(j.error || "Failed");
+      return j;
+    }
     async function apiPost(payload) {
       const res = await fetch("/api/connect", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(Object.assign({ email: userEmail }, payload))
+        headers: await authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload)
       });
-      return res.json();
+      const j = await readJson(res);
+      if (!res.ok) throw new Error(j.error || "Failed");
+      return j;
+    }
+
+    function playerCard(name, points, buttons) {
+      return '<div class="card"><div><b>' + esc(name) + '</b><div class="muted">' + esc(points || 0) + ' pts</div></div><div>' + buttons + '</div></div>';
     }
 
     async function loadPending() {
-      const data = await apiGet("pending");
-      const box = document.getElementById("pendingList");
-      const reqs = data.requests || [];
-      if (!reqs.length) { box.innerHTML = "<span class='muted'>No pending requests</span>"; return; }
-      box.innerHTML = reqs.map(function (r) {
-        return '<div class="card"><div><b>' + r.display_name + '</b><div class="muted">' + (r.points || 0) + ' pts</div></div>' +
-          '<div><button class="btn" data-accept="' + r.from_key + '">Accept</button> ' +
-          '<button class="btn btn2" data-reject="' + r.from_key + '">Reject</button></div></div>';
-      }).join("");
+      const box = $("pendingList");
+      try {
+        const reqs = (await apiGet("pending")).requests || [];
+        if (!reqs.length) { box.innerHTML = "<span class='muted'>No pending requests</span>"; return; }
+        box.innerHTML = reqs.map(function (r) {
+          return playerCard(r.display_name, r.points,
+            '<button class="btn" data-accept="' + esc(r.from_key) + '">Accept</button> ' +
+            '<button class="btn btn2" data-reject="' + esc(r.from_key) + '">Reject</button>');
+        }).join("");
+      } catch (e) { box.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; }
     }
 
     async function loadFriends() {
-      const data = await apiGet("list");
-      const box = document.getElementById("friendList");
-      const friends = data.friends || [];
-      if (!friends.length) { box.innerHTML = "<span class='muted'>No friends yet</span>"; return; }
-      box.innerHTML = friends.map(function (f) {
-        return '<div class="card"><div><b>' + f.display_name + '</b><div class="muted">' + (f.points || 0) + ' pts</div></div></div>';
-      }).join("");
+      const box = $("friendList");
+      try {
+        const friends = (await apiGet("list")).friends || [];
+        if (!friends.length) { box.innerHTML = "<span class='muted'>No friends yet</span>"; return; }
+        box.innerHTML = friends.map(function (f) { return playerCard(f.display_name, f.points, ""); }).join("");
+      } catch (e) { box.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; }
     }
 
-    document.getElementById("searchBtn").onclick = async function () {
-      const q = document.getElementById("q").value.trim();
-      const box = document.getElementById("searchList");
-      box.innerHTML = "Searching...";
-      const data = await apiGet("search", "&q=" + encodeURIComponent(q));
-      const users = data.users || [];
-      if (!users.length) { box.innerHTML = "<span class='muted'>No users found (they need leaderboard activity)</span>"; return; }
-      box.innerHTML = users.map(function (u) {
-        return '<div class="card"><div><b>' + u.display_name + '</b><div class="muted">' + (u.points || 0) + ' pts</div></div>' +
-          '<button class="btn" data-request="' + u.key + '">Connect</button></div>';
-      }).join("");
-    };
+    async function search() {
+      const q = $("q").value.trim();
+      const box = $("searchList");
+      say("");
+      if (q.length < 2) { say("Type at least 2 letters of the player name.", true); return; }
+      box.innerHTML = "<span class='muted'>Searching...</span>";
+      try {
+        const users = (await apiGet("search", "&q=" + encodeURIComponent(q))).users || [];
+        if (!users.length) { box.innerHTML = "<span class='muted'>No players found. Only players with leaderboard activity can be found.</span>"; return; }
+        box.innerHTML = users.map(function (u) {
+          let btn;
+          if (u.state === "friends") btn = '<span class="tag">Friends</span>';
+          else if (u.state === "sent") btn = '<span class="tag">Request sent</span>';
+          else if (u.state === "incoming") btn = '<button class="btn" data-accept="' + esc(u.key) + '">Accept</button>';
+          else btn = '<button class="btn" data-request="' + esc(u.key) + '">Connect</button>';
+          return playerCard(u.display_name, u.points, btn);
+        }).join("");
+      } catch (e) { box.innerHTML = ""; say(e.message || String(e), true); }
+    }
 
-    document.body.onclick = async function (e) {
-      const t = e.target;
-      if (t.getAttribute("data-request")) {
-        const data = await apiPost({ action: "request", target: t.getAttribute("data-request") });
-        alert(data.message || data.error || "Done");
+    $("searchBtn").onclick = search;
+    $("q").addEventListener("keydown", function (e) { if (e.key === "Enter") search(); });
+
+    document.body.addEventListener("click", async function (e) {
+      const btn = e.target.closest("button[data-request], button[data-accept], button[data-reject]");
+      if (!btn) return;
+      btn.disabled = true;
+      try {
+        if (btn.hasAttribute("data-request")) {
+          const r = await apiPost({ action: "request", target: btn.getAttribute("data-request") });
+          say(r.message || "Done");
+          btn.outerHTML = '<span class="tag">' + (r.state === "friends" ? "Friends" : "Request sent") + '</span>';
+          if (r.state === "friends") { loadPending(); loadFriends(); }
+        } else if (btn.hasAttribute("data-accept")) {
+          const r = await apiPost({ action: "accept", target: btn.getAttribute("data-accept") });
+          say(r.message || "Done");
+          loadPending(); loadFriends();
+        } else {
+          const r = await apiPost({ action: "reject", target: btn.getAttribute("data-reject") });
+          say(r.message || "Done");
+          loadPending();
+        }
+      } catch (err) {
+        btn.disabled = false;
+        say(err.message || String(err), true);
       }
-      if (t.getAttribute("data-accept")) {
-        await apiPost({ action: "accept", target: t.getAttribute("data-accept") });
-        loadPending(); loadFriends();
-      }
-      if (t.getAttribute("data-reject")) {
-        await apiPost({ action: "reject", target: t.getAttribute("data-reject") });
-        loadPending();
-      }
-    };
+    });
 
     (async function () {
-      const status = document.getElementById("status");
+      const status = $("status");
       try {
         const { data: { session } } = await sb.auth.getSession();
         if (!session) {
-          status.textContent = "Login required...";
-          window.location.href = "/login.html";
+          status.textContent = "Login required. Redirecting...";
+          window.location.href = "/login.html?next=/friends.html";
           return;
         }
-        userEmail = session.user.email || "";
         status.style.display = "none";
-        document.getElementById("app").style.display = "block";
+        $("app").style.display = "block";
         loadPending();
         loadFriends();
       } catch (e) {
